@@ -7,27 +7,27 @@ from pyrogram import filters
 load_dotenv()
 
 # Get this value from my.telegram.org/apps
-API_ID = int(getenv("API_ID"))
-API_HASH = getenv("API_HASH")
+API_ID = int(getenv("API_ID", "27638882"))
+API_HASH = getenv("API_HASH", "f745cdd5ddb46cf841d6990048f52935")
 
 # Get your token from @BotFather on Telegram.
-BOT_TOKEN = getenv("BOT_TOKEN")
+BOT_TOKEN = getenv("BOT_TOKEN", "8209900516:AAH5GYtFbGEHN9sYQXN4J7z4nJKS1kBllrE")
 
 # Get your mongo url from cloud.mongodb.com
-MONGO_DB_URI = getenv("MONGO_DB_URI", None)
+MONGO_DB_URI = getenv("MONGO_DB_URI", "mongodb://mongo:bBlGbsiXVMUFsiXTYOEXuGAnEHfCbNyn@mongodb.railway.internal:27017/armedmusic?authSource=admin")
 
 # Vars For API End Pont.
 YTPROXY_URL = getenv("YTPROXY_URL", 'https://tgapi.xbitcode.com') ## xBit Music Endpoint.
-YT_API_KEY = getenv("YT_API_KEY" , None ) ## Your API key like: xbit_10000000xx0233 Get from  https://t.me/tgmusic_apibot
+YT_API_KEY = getenv("YT_API_KEY" , "AIzaSyAyFW-9snpxGwFa5cu-p81jjE8Fg1h_6rk" ) ## Your API key like: xbit_10000000xx0233 Get from  https://t.me/tgmusic_apibot
 
 ## Other vaes
 DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 300))
 
 # Chat id of a group for logging bot's activities
-LOGGER_ID = int(getenv("LOGGER_ID"))
+LOGGER_ID = int(getenv("LOGGER_ID", "-1003142281080"))
 
 # Get this value from @FallenxBot on Telegram by /id
-OWNER_ID = int(getenv("OWNER_ID"))
+OWNER_ID = int(getenv("OWNER_ID", "7976004718"))
 
 ## Fill these variables if you're deploying on heroku.
 # Your heroku app name
@@ -37,7 +37,7 @@ HEROKU_API_KEY = getenv("HEROKU_API_KEY")
 
 UPSTREAM_REPO = getenv(
     "UPSTREAM_REPO",
-    "https://github.com/xbitcode/music.git",
+    "https://github.com/sqenaah/Muzza.git",
 )
 UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "main")
 GIT_TOKEN = getenv(
@@ -48,7 +48,7 @@ SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/amigr8")
 SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/randomlychats")
 
 # Set this to True if you want the assistant to automatically leave chats after an interval
-AUTO_LEAVING_ASSISTANT = bool(getenv("AUTO_LEAVING_ASSISTANT", True))
+AUTO_LEAVING_ASSISTANT = bool(getenv("AUTO_LEAVING_ASSISTANT", False))
 ASSISTANT_LEAVE_TIME = int(getenv("ASSISTANT_LEAVE_TIME",  5400))
 
 
@@ -74,7 +74,7 @@ CACHE_SLEEP = int(getenv("CACHE_SLEEP" , "3600"))   #60*60
 
 
 # Get your pyrogram v2 session from @StringFatherBot on Telegram
-STRING1 = getenv("STRING_SESSION", None)
+STRING1 = getenv("STRING_SESSION", "AgGlvGIAOTbpAfHjFV0qNLBBliSZuE5EPB0sq8AyRKZRjEa6Cn1O0VtDMj2qC0Ugi35lmM1U45sUn9dEsN9b6n0EuHoNUAllXmHHzrd_hUiZ1MPWahbZuzJMA1qdeGgZkb4bFaCrTdlglNAzZfUT4V-uBW11QK9svP7fDumkTzTn0Di6PM_GeprgZHM2v2xEHdQ9vItN3wCviLh9jS1U_kXqnCYxrPoeK_QErlLB5iRM5Q_jpjUKg6eAO-h-mA5tLQ2Kp51dC7_wRKRdfcKMrJElrAdOELd4u0My3hwZOWxTYHA7CWuv9UIp7oz6q83YLxA8w3KqgM5gltss1LYRb4TxzqEnkgAAAAHya_vDAA")
 STRING2 = getenv("STRING_SESSION2", None)
 STRING3 = getenv("STRING_SESSION3", None)
 STRING4 = getenv("STRING_SESSION4", None)

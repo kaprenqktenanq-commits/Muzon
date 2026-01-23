@@ -422,6 +422,7 @@ class YouTubeAPI:
         async def audio_dl(vid_id):
             try:
                 filepath = os.path.join("downloads", f"{vid_id}.mp3")
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
                 
                 if os.path.exists(filepath):
                     return filepath
@@ -470,6 +471,7 @@ class YouTubeAPI:
         async def video_dl(vid_id):
             try:
                 filepath = os.path.join("downloads", f"{vid_id}.mp4")
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
                 
                 if os.path.exists(filepath):
                     return filepath
@@ -512,6 +514,7 @@ class YouTubeAPI:
         async def song_video_dl():
             try:
                 filepath = f"downloads/{title}.mp4"
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
                 
                 if os.path.exists(filepath):
                     return filepath
@@ -554,6 +557,7 @@ class YouTubeAPI:
         async def song_audio_dl():
             try:
                 filepath = f"downloads/{title}.mp3"
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
                 
                 if os.path.exists(filepath):
                     return filepath

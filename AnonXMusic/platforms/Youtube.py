@@ -441,12 +441,15 @@ class YouTubeAPI:
                     'fragment_retries': 20,
                     'skip_unavailable_fragments': True,
                     'geo_bypass': True,
+                    'geo_bypass_country': 'US',
                     'extract_flat': False,
                     'sleep_interval': 1,
                     'max_sleep_interval': 5,
                     'concurrent_fragment_downloads': 3,
                     'http_chunk_size': 1048576,
                     'continuedl': True,
+                    'force_ipv4': True,
+                    'age_limit': None,
                 }
                 
                 loop = asyncio.get_running_loop()
@@ -481,12 +484,15 @@ class YouTubeAPI:
                     'fragment_retries': 20,
                     'skip_unavailable_fragments': True,
                     'geo_bypass': True,
+                    'geo_bypass_country': 'US',
                     'extract_flat': False,
                     'sleep_interval': 1,
                     'max_sleep_interval': 5,
                     'concurrent_fragment_downloads': 3,
                     'http_chunk_size': 1048576,
                     'continuedl': True,
+                    'force_ipv4': True,
+                    'age_limit': None,
                 }
                 
                 loop = asyncio.get_running_loop()
@@ -520,12 +526,15 @@ class YouTubeAPI:
                     'fragment_retries': 20,
                     'skip_unavailable_fragments': True,
                     'geo_bypass': True,
+                    'geo_bypass_country': 'US',
                     'extract_flat': False,
                     'sleep_interval': 1,
                     'max_sleep_interval': 5,
                     'concurrent_fragment_downloads': 3,
                     'http_chunk_size': 1048576,
                     'continuedl': True,
+                    'force_ipv4': True,
+                    'age_limit': None,
                 }
                 
                 loop = asyncio.get_running_loop()
@@ -564,12 +573,15 @@ class YouTubeAPI:
                     'fragment_retries': 20,
                     'skip_unavailable_fragments': True,
                     'geo_bypass': True,
+                    'geo_bypass_country': 'US',
                     'extract_flat': False,
                     'sleep_interval': 1,
                     'max_sleep_interval': 5,
                     'concurrent_fragment_downloads': 3,
                     'http_chunk_size': 1048576,
                     'continuedl': True,
+                    'force_ipv4': True,
+                    'age_limit': None,
                 }
                 
                 loop = asyncio.get_running_loop()

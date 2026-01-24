@@ -444,8 +444,10 @@ class YouTubeAPI:
                 except Exception as info_e:
                     logger.error(f"Failed to get info for {vid_id}: {str(info_e)}")
                 
+                cookie_file = cookie_txt_file()
+                
                 ydl_opts = {
-                    'format': 'bestaudio/best',
+                    'format': '140/bestaudio[ext=m4a]/bestaudio',
                     'outtmpl': filepath,
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
@@ -459,6 +461,8 @@ class YouTubeAPI:
                     'skip_unavailable_fragments': True,
                 }
                 
+                if cookie_file:
+                    ydl_opts['cookiefile'] = cookie_file
                 if YOUTUBE_PROXY:
                     ydl_opts['proxy'] = YOUTUBE_PROXY
                 

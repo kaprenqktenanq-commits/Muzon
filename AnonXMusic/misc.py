@@ -19,7 +19,6 @@ XCB = [
     ".",
     "com",
     ":",
-    "git",
     "push",
     "https",
     "HEAD",

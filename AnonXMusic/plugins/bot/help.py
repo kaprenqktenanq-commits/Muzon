@@ -8,6 +8,7 @@ from pyrogram.errors import MessageNotModified
 from AnonXMusic import app
 from AnonXMusic.misc import SUDOERS
 from AnonXMusic.utils import help_pannel
+from AnonXMusic.utils.database import get_lang
 from AnonXMusic.utils.decorators.language import LanguageStart, languageCB
 from AnonXMusic.utils.inline.help import help_back_markup, private_help_panel
 from config import BANNED_USERS, START_IMG_URL

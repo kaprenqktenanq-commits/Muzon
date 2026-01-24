@@ -11,10 +11,10 @@ import shutil
 import re
 
 
-from AnonXMusic import config
+from config import YOUTUBE_IMG_URL
 
 
-ASSETS_DIR = Path("AnonXMusic/fonts")
+ASSETS_DIR = Path("../fonts")
 
 ARM_FONTS = [
     "NotoSansArmenian-Regular.ttf",
@@ -723,7 +723,7 @@ async def get_thumb(videoid: str, queue_pos: int = 1, title_style: str = 'bold')
     except Exception as e:
         print(f"[Thumb Error] {e}")
         traceback.print_exc()
-        return config.DEFAULT_THUMB
+        return YOUTUBE_IMG_URL
 
 
 class Thumbnail:

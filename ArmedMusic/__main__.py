@@ -28,7 +28,7 @@ async def init():
     try:
         await app.start()
     except FloodWait as e:
-        LOGGER(__name__).info(f'FloodWait detected: waiting {e.value} seconds before retrying...')
+        LOGGER(__name__).info(f"FloodWait detected: waiting {e.value} seconds before retrying...")
         await asyncio.sleep(e.value)
         await app.start()
     for all_module in ALL_MODULES:
@@ -37,7 +37,7 @@ async def init():
     try:
         await userbot.start()
     except FloodWait as e:
-        LOGGER(__name__).info(f'FloodWait detected for userbot: waiting {e.value} seconds before retrying...')
+        LOGGER(__name__).info(f"FloodWait detected for userbot: waiting {e.value} seconds before retrying...")
         await asyncio.sleep(e.value)
         await userbot.start()
     await Anony.start()

@@ -30,9 +30,6 @@ LOGGER_ID = int(getenv("LOGGER_ID", "-1003142281080"))
 # Get this value from @FallenxBot on Telegram by /id
 OWNER_ID = int(getenv("OWNER_ID", "7976004718"))
 
-# Support channel URL
-SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/your_support_channel")
-
 # Set this to True if you want the assistant to automatically leave chats after an interval
 AUTO_LEAVING_ASSISTANT = bool(getenv("AUTO_LEAVING_ASSISTANT", False))
 ASSISTANT_LEAVE_TIME = int(getenv("ASSISTANT_LEAVE_TIME",  5400))

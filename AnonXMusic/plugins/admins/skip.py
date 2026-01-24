@@ -121,10 +121,10 @@ async def skip(cli, message: Message, _, chat_id):
         run = await message.reply_photo(
             photo=img,
             caption=_["stream_1"].format(
-                f"https://t.me/{app.username}?start=info_{videoid}",
                 title[:23],
                 check[0]["dur"],
                 user,
+                f"https://t.me/{app.username}?start=info_{videoid}",
             ),
             reply_markup=InlineKeyboardMarkup(button),
         )
@@ -154,10 +154,10 @@ async def skip(cli, message: Message, _, chat_id):
         run = await message.reply_photo(
             photo=img,
             caption=_["stream_1"].format(
-                f"https://t.me/{app.username}?start=info_{videoid}",
                 title[:23],
                 check[0]["dur"],
                 user,
+                f"https://t.me/{app.username}?start=info_{videoid}",
             ),
             reply_markup=InlineKeyboardMarkup(button),
         )
@@ -198,7 +198,7 @@ async def skip(cli, message: Message, _, chat_id):
                 if str(streamtype) == "audio"
                 else config.TELEGRAM_VIDEO_URL,
                 caption=_["stream_1"].format(
-                    title[:23], check[0]["dur"], user
+                    title[:23], check[0]["dur"], user, "#"
                 ),
                 reply_markup=InlineKeyboardMarkup(button),
             )
@@ -211,7 +211,7 @@ async def skip(cli, message: Message, _, chat_id):
                 if str(streamtype) == "audio"
                 else config.TELEGRAM_VIDEO_URL,
                 caption=_["stream_1"].format(
-                    title[:23], check[0]["dur"], user
+                    title[:23], check[0]["dur"], user, "#"
                 ),
                 reply_markup=InlineKeyboardMarkup(button),
             )
@@ -223,10 +223,10 @@ async def skip(cli, message: Message, _, chat_id):
             run = await message.reply_photo(
                 photo=img,
                 caption=_["stream_1"].format(
-                    f"https://t.me/{app.username}?start=info_{videoid}",
                     title[:23],
                     check[0]["dur"],
                     user,
+                    f"https://t.me/{app.username}?start=info_{videoid}",
                 ),
                 reply_markup=InlineKeyboardMarkup(button),
             )

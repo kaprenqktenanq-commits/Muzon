@@ -232,10 +232,10 @@ async def del_back_playlist(client, CallbackQuery:CallbackQuery, _):
             run = await CallbackQuery.message.reply_photo(
                 photo=img,
                 caption=_["stream_1"].format(
-                    f"https://t.me/{app.username}?start=info_{videoid}",
                     title[:23],
                     duration,
                     user,
+                    f"https://t.me/{app.username}?start=info_{videoid}",
                 ),
                 reply_markup=InlineKeyboardMarkup(button),
             )
@@ -268,10 +268,10 @@ async def del_back_playlist(client, CallbackQuery:CallbackQuery, _):
             run = await CallbackQuery.message.reply_photo(
                 photo=img,
                 caption=_["stream_1"].format(
-                    f"https://t.me/{app.username}?start=info_{videoid}",
                     title[:23],
                     duration,
                     user,
+                    f"https://t.me/{app.username}?start=info_{videoid}",
                 ),
                 reply_markup=InlineKeyboardMarkup(button),
             )
@@ -314,7 +314,7 @@ async def del_back_playlist(client, CallbackQuery:CallbackQuery, _):
                     if str(streamtype) == "audio"
                     else TELEGRAM_VIDEO_URL,
                     caption=_["stream_1"].format(
-                        title[:23], duration, user
+                        title[:23], duration, user, "#"
                     ),
                     reply_markup=InlineKeyboardMarkup(button),
                 )
@@ -327,7 +327,7 @@ async def del_back_playlist(client, CallbackQuery:CallbackQuery, _):
                     if str(streamtype) == "audio"
                     else TELEGRAM_VIDEO_URL,
                     caption=_["stream_1"].format(
-                        title[:23], duration, user
+                        title[:23], duration, user, "#"
                     ),
                     reply_markup=InlineKeyboardMarkup(button),
                 )

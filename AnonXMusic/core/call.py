@@ -412,10 +412,10 @@ class Call(PyTgCalls):
                     chat_id=original_chat_id,
                     photo=img,
                     caption=_["stream_1"].format(
-                        f"https://t.me/{app.username}?start=info_{videoid}",
                         title[:23],
                         check[0]["dur"],
                         user,
+                        f"https://t.me/{app.username}?start=info_{videoid}",
                     ),
                     reply_markup=InlineKeyboardMarkup(button),
                 )
@@ -460,10 +460,10 @@ class Call(PyTgCalls):
                     chat_id=original_chat_id,
                     photo=img,
                     caption=_["stream_1"].format(
-                        f"https://t.me/{app.username}?start=info_{videoid}",
                         title[:23],
                         check[0]["dur"],
                         user,
+                        f"https://t.me/{app.username}?start=info_{videoid}",
                     ),
                     reply_markup=InlineKeyboardMarkup(button),
                 )

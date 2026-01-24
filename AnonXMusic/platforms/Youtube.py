@@ -459,7 +459,7 @@ class YouTubeAPI:
                 cookie_file = cookie_txt_file()
                 
                 ydl_opts = {
-                    'format': '140/bestaudio[ext=m4a]/bestaudio',
+                    'format': 'bestaudio[ext=m4a]/bestaudio[acodec=mp4a]/140/bestaudio',
                     'outtmpl': os.path.join("downloads", f"{vid_id}"),
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
@@ -616,8 +616,10 @@ class YouTubeAPI:
                 if os.path.exists(filepath):
                     return filepath
                 
+                cookie_file = cookie_txt_file()
+                
                 ydl_opts = {
-                    'format': 'bestaudio/best',
+                    'format': 'bestaudio[ext=m4a]/bestaudio[acodec=mp4a]/140/bestaudio',
                     'outtmpl': f"downloads/{title}",
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
@@ -629,8 +631,22 @@ class YouTubeAPI:
                     'retries': 10,
                     'fragment_retries': 10,
                     'skip_unavailable_fragments': True,
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Sec-Fetch-Mode': 'navigate',
+                    },
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'player_skip': ['js', 'configs', 'webpage'],
+                        }
+                    },
                 }
                 
+                if cookie_file:
+                    ydl_opts['cookiefile'] = cookie_file
                 if YOUTUBE_PROXY:
                     ydl_opts['proxy'] = YOUTUBE_PROXY
                 

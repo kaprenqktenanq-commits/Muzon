@@ -433,6 +433,18 @@ class YouTubeAPI:
                         'quiet': True,
                         'no_warnings': True,
                         'extract_flat': False,
+                        'http_headers': {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                            'Accept-Language': 'en-us,en;q=0.5',
+                            'Sec-Fetch-Mode': 'navigate',
+                        },
+                        'extractor_args': {
+                            'youtube': {
+                                'player_client': ['android', 'web'],
+                                'player_skip': ['js', 'configs', 'webpage'],
+                            }
+                        },
                     }
                     with yt_dlp.YoutubeDL(info_opts) as ydl:
                         info = ydl.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
@@ -459,6 +471,18 @@ class YouTubeAPI:
                     'retries': 10,
                     'fragment_retries': 10,
                     'skip_unavailable_fragments': True,
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Sec-Fetch-Mode': 'navigate',
+                    },
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'player_skip': ['js', 'configs', 'webpage'],
+                        }
+                    },
                 }
                 
                 if cookie_file:
@@ -506,6 +530,18 @@ class YouTubeAPI:
                     'retries': 10,
                     'fragment_retries': 10,
                     'skip_unavailable_fragments': True,
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Sec-Fetch-Mode': 'navigate',
+                    },
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'player_skip': ['js', 'configs', 'webpage'],
+                        }
+                    },
                 }
                 
                 if YOUTUBE_PROXY:
@@ -541,6 +577,18 @@ class YouTubeAPI:
                     'retries': 10,
                     'fragment_retries': 10,
                     'skip_unavailable_fragments': True,
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-us,en;q=0.5',
+                        'Sec-Fetch-Mode': 'navigate',
+                    },
+                    'extractor_args': {
+                        'youtube': {
+                            'player_client': ['android', 'web'],
+                            'player_skip': ['js', 'configs', 'webpage'],
+                        }
+                    },
                 }
                 
                 if YOUTUBE_PROXY:

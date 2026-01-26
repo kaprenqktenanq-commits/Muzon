@@ -10,7 +10,7 @@ from pyrogram.errors.exceptions.flood_420 import SlowmodeWait
 from ytSearch import VideosSearch
 import config
 from ArmedMusic import app
-from ArmedMusic.misc import _boot_
+from ArmedMusic.misc import _boot_, SUDOERS
 from ArmedMusic.plugins.sudo.sudoers import sudoers_list
 from ArmedMusic.utils.database import add_served_chat, add_served_user, blacklisted_chats, get_lang, is_banned_user, is_on_off, blacklist_chat
 from ArmedMusic.utils.decorators.language import LanguageStart

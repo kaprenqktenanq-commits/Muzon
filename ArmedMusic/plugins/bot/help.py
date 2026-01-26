@@ -35,7 +35,7 @@ async def helper_private(client, update: Union[types.Message, types.CallbackQuer
         language = await get_lang(update.chat.id)
         _ = get_string(language)
         keyboard = help_pannel(_, is_sudo)
-        await update.reply_photo(photo=random.choice(config.START_IMG_URL), caption=_['help_1'], reply_markup=keyboard)
+        await update.reply_photo(photo=random.choice(START_IMG_URL), caption=_['help_1'], reply_markup=keyboard)
 
 @app.on_message(filters.command(['help']) & filters.group & ~BANNED_USERS)
 @LanguageStart

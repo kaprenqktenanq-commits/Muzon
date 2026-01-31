@@ -11,7 +11,11 @@ API_HASH = getenv("API_HASH", "f745cdd5ddb46cf841d6990048f52935")
 
 BOT_TOKEN = getenv("BOT_TOKEN", "8568049660:AAHZl3Wg5b-MTXBjhQbsn9MrP9cCKbWjgDs")
 
-MONGO_DB_URI = "mongodb://mongo:mkMgrOSKhPDCaZVjSGlSWbolcENfIdeD@mongodb.railway.internal:27017"
+# Полный URI для подключения к MongoDB
+MONGO_DB_URI = "mongodb://mongo:mkMgrOSKhPDCaZVjSGlSWbolcENfIdeD@mongodb.railway.internal:27017/armedmusic?authSource=admin"
+
+# Имя базы данных (для твоего бота)
+MONGO_DB_NAME = "armedmusic"
 
 YTPROXY_URL = getenv("YTPROXY_URL", None)
 YOUTUBE_PROXY = getenv("YOUTUBE_PROXY", None)

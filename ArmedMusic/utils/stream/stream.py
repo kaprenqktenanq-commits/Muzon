@@ -22,8 +22,13 @@ async def _add_requester_message_link(run, chat_id, caption_template, info_link,
             return
         # Build message link: prefer chat username, else use t.me/c/<chat_id_without_prefix>/<msgid>
         chat_username = getattr(getattr(run, 'chat', None), 'username', None)
+        try:
+            message_id = run.message_id
+        except AttributeError:
+            logger.warning("run object does not have message_id attribute")
+            return
         if chat_username:
-            message_link = f"https://t.me/{chat_username}/{run.message_id}"
+            message_link = f"https://t.me/{chat_username}/{message_id}"
         else:
             cid = str(chat_id)
             if cid.startswith('-100'):
@@ -32,7 +37,7 @@ async def _add_requester_message_link(run, chat_id, caption_template, info_link,
                 short = cid[1:]
             else:
                 short = cid
-            message_link = f"https://t.me/c/{short}/{run.message_id}"
+            message_link = f"https://t.me/c/{short}/{message_id}"
         new_user = f"<a href='{message_link}'>{user_name}</a>"
         new_caption = caption_template.format(info_link, title, duration_min, new_user)
         # Try editing caption (media) first, fallback to edit text

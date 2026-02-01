@@ -248,7 +248,11 @@ class YouTubeAPI:
         elif '&si=' in link:
             link = link.split('&si=')[0]
         results = VideosSearch(link, limit=1)
-        for result in (await results.next())['result']:
+        res = await results.next()
+        results_list = res['result']
+        if not results_list:
+            raise ValueError("ꜰᴀɪʟᴇᴅ ᴛᴏ ꜰᴇᴛᴄʜ ᴛʀᴀᴄᴋ ᴅᴇᴛᴀɪʟs. ᴛʀʏ ᴘʟᴀʏɪɴɢ ᴀɴʏ ᴏᴛʜᴇʀ.")
+        for result in results_list:
             title = result['title']
             duration_min = result['duration']
             vidid = result['id']

@@ -91,8 +91,8 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
             else:
                 try:
                     details, track_id = await YouTube.track(url)
-                except:
-                    return await mystic.edit_text(_['play_3'])
+                except Exception as e:
+                    return await mystic.edit_text(str(e))
                 streamtype = 'youtube'
                 img = details['thumb']
                 cap = _['play_10'].format(details['title'], details['duration_min'])
@@ -103,8 +103,8 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
             if 'track' in url:
                 try:
                     details, track_id = await Spotify.track(url)
-                except:
-                    return await mystic.edit_text(_['play_3'])
+                except Exception as e:
+                    return await mystic.edit_text(str(e))
                 streamtype = 'youtube'
                 img = details['thumb']
                 cap = _['play_10'].format(details['title'], details['duration_min'])
@@ -141,8 +141,8 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
             if 'album' in url:
                 try:
                     details, track_id = await Apple.track(url)
-                except:
-                    return await mystic.edit_text(_['play_3'])
+                except Exception as e:
+                    return await mystic.edit_text(str(e))
                 streamtype = 'youtube'
                 img = details['thumb']
                 cap = _['play_10'].format(details['title'], details['duration_min'])
@@ -161,8 +161,8 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
         elif await Resso.valid(url):
             try:
                 details, track_id = await Resso.track(url)
-            except:
-                return await mystic.edit_text(_['play_3'])
+            except Exception as e:
+                return await mystic.edit_text(str(e))
             streamtype = 'youtube'
             img = details['thumb']
             cap = _['play_10'].format(details['title'], details['duration_min'])

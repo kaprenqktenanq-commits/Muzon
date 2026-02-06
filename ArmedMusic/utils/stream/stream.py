@@ -177,7 +177,7 @@ async def stream(_, mystic, user_id, result, chat_id, user_name, original_chat_i
         duration_min = result['dur']
         status = True if video else None
         if await is_active_chat(chat_id):
-            await put_queue(chat_id, original_chat_id, file_path, title, duration_min, user_name, streamtype, user_id, 'video' if video else 'audio')
+            await put_queue(chat_id, original_chat_id, file_path, title, duration_min, user_name, streamtype, user_id, 'video' if video else 'audio', link=link)
             position = len(db.get(chat_id)) - 1
             button = aq_markup(_, chat_id)
             await app.send_message(chat_id=original_chat_id, text=_['queue_4'].format(position, title, duration_min, user_name), reply_markup=InlineKeyboardMarkup(button))
@@ -185,7 +185,7 @@ async def stream(_, mystic, user_id, result, chat_id, user_name, original_chat_i
             if not forceplay:
                 db[chat_id] = []
             await Anony.join_call(chat_id, original_chat_id, file_path, video=status)
-            await put_queue(chat_id, original_chat_id, file_path, title, duration_min, user_name, streamtype, user_id, 'video' if video else 'audio', forceplay=forceplay)
+            await put_queue(chat_id, original_chat_id, file_path, title, duration_min, user_name, streamtype, user_id, 'video' if video else 'audio', forceplay=forceplay, link=link)
             if video:
                 await add_active_video_chat(chat_id)
             # Save file info for download button

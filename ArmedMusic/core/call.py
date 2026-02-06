@@ -517,11 +517,13 @@ class Call(PyTgCalls):
                     )
                 if videoid == "telegram":
                     button = stream_markup(_, chat_id)
+                    # Use original message link if available, otherwise use info_telegram
+                    msg_link = check[0].get('link', f"https://t.me/{app.username}?start=info_{videoid}")
                     run = await app.send_photo(
                         chat_id=original_chat_id,
                         photo=config.TELEGRAM_AUDIO_URL if str(streamtype) == "audio" else config.TELEGRAM_VIDEO_URL,
                         caption=_["stream_1"].format(
-                            f"https://t.me/{app.username}?start=info_{videoid}",
+                            msg_link,
                             title,
                             check[0]["dur"],
                             user,
@@ -530,7 +532,7 @@ class Call(PyTgCalls):
                     )
                     try:
                         from ArmedMusic.utils.stream.stream import _add_requester_message_link
-                        await _add_requester_message_link(run, original_chat_id, _["stream_1"], f"https://t.me/{app.username}?start=info_{videoid}", title, check[0]["dur"], user, InlineKeyboardMarkup(button))
+                        await _add_requester_message_link(run, original_chat_id, _["stream_1"], msg_link, title, check[0]["dur"], user, InlineKeyboardMarkup(button))
                     except Exception:
                         pass
                     db[chat_id][0]["mystic"] = run

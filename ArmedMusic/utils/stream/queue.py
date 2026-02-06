@@ -4,13 +4,15 @@ from ArmedMusic.misc import db
 from ArmedMusic.utils.formatters import check_duration, seconds_to_min
 from config import autoclean, time_to_seconds
 
-async def put_queue(chat_id, original_chat_id, file, title, duration, user, vidid, user_id, stream, forceplay: Union[bool, str]=None):
+async def put_queue(chat_id, original_chat_id, file, title, duration, user, vidid, user_id, stream, forceplay: Union[bool, str]=None, link: Union[bool, str]=None):
     title = title.title()
     try:
         duration_in_seconds = time_to_seconds(duration) - 3
     except:
         duration_in_seconds = 0
     put = {'title': title, 'dur': duration, 'streamtype': stream, 'by': user, 'user_id': user_id, 'chat_id': original_chat_id, 'file': file, 'vidid': vidid, 'seconds': duration_in_seconds, 'played': 0}
+    if link:
+        put['link'] = link
     if forceplay:
         check = db.get(chat_id)
         if check:

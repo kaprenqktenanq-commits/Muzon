@@ -445,7 +445,12 @@ class YouTubeAPI:
                                 logger.info(f'Invidious download succeeded with {inst}')
                                 return filepath
                         except Exception as e:
-                            logger.warning(f'Invidious {inst} failed for {vid_id}: {e}')
+                            error_msg = str(e)
+                            # Skip if authentication-related
+                            if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                                logger.warning(f'Invidious {inst} requires authentication (skipping)')
+                            else:
+                                logger.warning(f'Invidious {inst} failed for {vid_id}: {e}')
                 # Try pytube if enabled
                 if YOUTUBE_USE_PYTUBE:
                     try:
@@ -468,7 +473,12 @@ class YouTubeAPI:
                             except Exception as conv_e:
                                 logger.warning(f'ffmpeg conversion failed for {out}: {conv_e}')
                     except Exception as py_e:
-                        logger.warning(f'pytube failed for {vid_id}: {py_e}')
+                        error_msg = str(py_e)
+                        # Skip if authentication-related
+                        if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                            logger.warning(f'pytube requires authentication (skipping): {error_msg}')
+                        else:
+                            logger.warning(f'pytube failed for {vid_id}: {py_e}')
                 ydl_opts_list = [
                     {
                         'format': 'bestaudio/best',
@@ -655,6 +665,10 @@ class YouTubeAPI:
                             logger.warning(f'Download config {i + 1} completed but file not found at {filepath}')
                     except Exception as e:
                         error_msg = str(e)
+                        # Skip this variant if it requires authentication
+                        if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                            logger.warning(f'Download config {i + 1} requires authentication (skipping): {error_msg}')
+                            continue
                         logger.warning(f'Download config {i + 1} failed for {vid_id}: {error_msg}')
                         continue
                 logger.error(f'All download configurations failed for {vid_id}')
@@ -665,7 +679,11 @@ class YouTubeAPI:
                         cmd.extend(['--proxy', YOUTUBE_PROXY])
                     proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
                     stdout, stderr = await proc.communicate()
-                    if proc.returncode == 0 and stdout:
+                    stderr_str = stderr.decode()
+                    # Check if error is authentication-related
+                    if 'Sign in to confirm' in stderr_str or 'cookies' in stderr_str.lower():
+                        logger.warning(f'Direct stream fallback requires authentication (skipping)')
+                    elif proc.returncode == 0 and stdout:
                         urls = stdout.decode().splitlines()
                         for u in urls:
                             res = await download_with_requests(u, filepath)
@@ -691,7 +709,12 @@ class YouTubeAPI:
                             logger.info('Legacy youtube_dl fallback succeeded')
                             return filepath
                     except Exception as ly_e:
-                        logger.warning(f'Legacy youtube_dl fallback failed: {ly_e}')
+                        error_msg = str(ly_e)
+                        # Skip if authentication-related
+                        if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                            logger.warning(f'Legacy youtube_dl requires authentication (skipping): {error_msg}')
+                        else:
+                            logger.warning(f'Legacy youtube_dl fallback failed: {ly_e}')
                 except Exception:
                     # youtube_dl not installed or import failed - ignore
                     pass
@@ -703,7 +726,12 @@ class YouTubeAPI:
                         logger.info('External MP3 extraction service succeeded')
                         return filepath
                 except Exception as ext_e:
-                    logger.warning(f'External MP3 extraction failed: {ext_e}')
+                    error_msg = str(ext_e)
+                    # Skip if authentication-related
+                    if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                        logger.warning(f'External services require authentication (skipping): {error_msg}')
+                    else:
+                        logger.warning(f'External MP3 extraction failed: {ext_e}')
                 # Fallback: search for other videos with the same title and try them
                 try:
                     if info and isinstance(info, dict) and info.get('title'):
@@ -718,7 +746,12 @@ class YouTubeAPI:
                                 if alt_res:
                                     return alt_res
                 except Exception as s_e:
-                    logger.warning(f'Fallback search failed: {s_e}')
+                    error_msg = str(s_e)
+                    # Skip if authentication-related
+                    if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                        logger.warning(f'Fallback search requires authentication (skipping)')
+                    else:
+                        logger.warning(f'Fallback search failed: {s_e}')
                 return None
             except Exception as e:
                 logger.error(f'yt_dlp audio download failed for {vid_id}: {str(e)}')
@@ -794,7 +827,12 @@ class YouTubeAPI:
                             logger.info(f'Video download succeeded with format: {fmt}')
                             return filepath
                     except Exception as fmt_e:
-                        logger.warning(f'Format {fmt} failed for {vid_id}: {str(fmt_e)}')
+                        error_msg = str(fmt_e)
+                        # Skip this variant if it requires authentication
+                        if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                            logger.warning(f'Format {fmt} requires authentication (skipping): {error_msg}')
+                        else:
+                            logger.warning(f'Format {fmt} failed for {vid_id}: {error_msg}')
                         # Remove partial file if it exists
                         if os.path.exists(filepath):
                             os.remove(filepath)
@@ -876,7 +914,12 @@ class YouTubeAPI:
                             logger.info(f'Song video download succeeded with format: {fmt}')
                             return filepath
                     except Exception as fmt_e:
-                        logger.warning(f'Format {fmt} failed for song video {vid_id}: {str(fmt_e)}')
+                        error_msg = str(fmt_e)
+                        # Skip this variant if it requires authentication
+                        if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                            logger.warning(f'Format {fmt} requires authentication (skipping): {error_msg}')
+                        else:
+                            logger.warning(f'Format {fmt} failed for song video {vid_id}: {error_msg}')
                         # Remove partial file if it exists
                         if os.path.exists(filepath):
                             os.remove(filepath)

@@ -13,7 +13,7 @@ from ArmedMusic.utils.channelplay import get_channeplayCB
 from ArmedMusic.utils.decorators.language import languageCB
 from ArmedMusic.utils.decorators.play import PlayWrapper
 from ArmedMusic.utils.decorators.urls import no_preview_filter
-from ArmedMusic.utils.formatters import formats, clean_query
+from ArmedMusic.utils.formatters import formats, clean_query, remove_emoji
 from ArmedMusic.utils.inline import botplaylist_markup, livestream_markup, playlist_markup, slider_markup, track_markup
 from ArmedMusic.utils.logger import play_logs
 from ArmedMusic.utils.stream.stream import stream
@@ -97,7 +97,7 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
                     return await mystic.edit_text(str(e))
                 streamtype = 'youtube'
                 img = details['thumb']
-                cap = _['play_10'].format(details['title'], details['duration_min'])
+                cap = _['play_10'].format(remove_emoji(details['title']), details['duration_min'])
         elif await Spotify.valid(url):
             spotify = True
             if not config.SPOTIFY_CLIENT_ID and (not config.SPOTIFY_CLIENT_SECRET):
@@ -109,7 +109,7 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
                     return await mystic.edit_text(str(e))
                 streamtype = 'youtube'
                 img = details['thumb']
-                cap = _['play_10'].format(details['title'], details['duration_min'])
+                cap = _['play_10'].format(remove_emoji(details['title']), details['duration_min'])
             elif 'playlist' in url:
                 try:
                     details, plist_id = await Spotify.playlist(url)
@@ -147,7 +147,7 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
                     return await mystic.edit_text(str(e))
                 streamtype = 'youtube'
                 img = details['thumb']
-                cap = _['play_10'].format(details['title'], details['duration_min'])
+                cap = _['play_10'].format(remove_emoji(details['title']), details['duration_min'])
             elif 'playlist' in url:
                 spotify = True
                 try:
@@ -243,7 +243,7 @@ async def play_commnd(client, message: Message, _, chat_id, video, channel, play
     elif slider:
         buttons = slider_markup(_, track_id, message.from_user.id, query, 0, 'c' if channel else 'g', 'f' if fplay else 'd')
         await mystic.delete()
-        await message.reply_photo(photo=details['thumb'], caption=_['play_10'].format(details['title'].title(), details['duration_min']), reply_markup=InlineKeyboardMarkup(buttons))
+        await message.reply_photo(photo=details['thumb'], caption=_['play_10'].format(remove_emoji(details['title'].title()), details['duration_min']), reply_markup=InlineKeyboardMarkup(buttons))
         return await play_logs(message, streamtype=f'Searched on Youtube')
     else:
         buttons = track_markup(_, track_id, message.from_user.id, 'c' if channel else 'g', 'f' if fplay else 'd')

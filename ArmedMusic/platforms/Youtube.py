@@ -394,6 +394,27 @@ class YouTubeAPI:
                     return filepath
                 # Safely attempt to get video info; ensure `info` is always defined
                 info = None
+                requires_auth = False
+                # Pre-check: detect if video requires authentication
+                try:
+                    check_opts = {
+                        'quiet': True,
+                        'no_warnings': True,
+                        'extract_flat': False,
+                        'socket_timeout': 15,
+                        'http_headers': {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                        },
+                        'extractor_args': {'youtube': {'player_client': ['web']}}
+                    }
+                    with yt_dlp.YoutubeDL(check_opts) as ydl_check:
+                        ydl_check.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
+                except Exception as check_e:
+                    error_msg = str(check_e)
+                    if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                        logger.warning(f'Video {vid_id} requires authentication - skipping YouTube attempts, using fallbacks only')
+                        requires_auth = True
+                    info = None
                 try:
                     info_opts = {
                         'quiet': True,
@@ -649,31 +670,35 @@ class YouTubeAPI:
                         'extractor_args': {'youtube': {'player_client': ['web_safari'], 'player_skip': ['js'], 'innertube_client': 'web_safari'}}
                     }
                 ]
-                for i in range(len(ydl_opts_list)):
-                    try:
-                        logger.info(f'Trying download configuration {i + 1} for {vid_id}')
-                        ydl_opts = ydl_opts_list[i].copy()
-                        if YOUTUBE_PROXY and 'proxy' not in ydl_opts:
-                            ydl_opts['proxy'] = YOUTUBE_PROXY
-                        loop = asyncio.get_running_loop()
-                        with ThreadPoolExecutor() as executor:
-                            result = await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).download([f'https://www.youtube.com/watch?v={vid_id}']))
-                            logger.info(f'yt_dlp download result for {vid_id} (config {i + 1}): {result}')
-                        logger.info(f'Checking for file at {filepath}')
-                        if os.path.exists(filepath):
-                            logger.info(f'File found: {filepath}')
-                            return filepath
-                        else:
-                            logger.warning(f'Download config {i + 1} completed but file not found at {filepath}')
-                    except Exception as e:
-                        error_msg = str(e)
-                        # Skip this variant if it requires authentication
-                        if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
-                            logger.warning(f'Download config {i + 1} requires authentication (skipping): {error_msg}')
+                # Skip direct YouTube yt-dlp download attempts if video requires authentication
+                if not requires_auth:
+                    for i in range(len(ydl_opts_list)):
+                        try:
+                            logger.info(f'Trying download configuration {i + 1} for {vid_id}')
+                            ydl_opts = ydl_opts_list[i].copy()
+                            if YOUTUBE_PROXY and 'proxy' not in ydl_opts:
+                                ydl_opts['proxy'] = YOUTUBE_PROXY
+                            loop = asyncio.get_running_loop()
+                            with ThreadPoolExecutor() as executor:
+                                result = await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).download([f'https://www.youtube.com/watch?v={vid_id}']))
+                                logger.info(f'yt_dlp download result for {vid_id} (config {i + 1}): {result}')
+                            logger.info(f'Checking for file at {filepath}')
+                            if os.path.exists(filepath):
+                                logger.info(f'File found: {filepath}')
+                                return filepath
+                            else:
+                                logger.warning(f'Download config {i + 1} completed but file not found at {filepath}')
+                        except Exception as e:
+                            error_msg = str(e)
+                            # Skip this variant if it requires authentication
+                            if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                                logger.warning(f'Download config {i + 1} requires authentication (skipping): {error_msg}')
+                                continue
+                            logger.warning(f'Download config {i + 1} failed for {vid_id}: {error_msg}')
                             continue
-                        logger.warning(f'Download config {i + 1} failed for {vid_id}: {error_msg}')
-                        continue
-                logger.error(f'All download configurations failed for {vid_id}')
+                    logger.error(f'All download configurations failed for {vid_id}')
+                else:
+                    logger.info(f'Skipping all direct YouTube yt-dlp methods for {vid_id} (requires authentication)')
                 # Fallback: try direct stream URLs via yt-dlp -g then download via requests
                 try:
                     cmd = ['yt-dlp', '--format', 'bestaudio/best', '--js-runtimes', 'node', '-g', f'https://www.youtube.com/watch?v={vid_id}']
@@ -765,6 +790,27 @@ class YouTubeAPI:
                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
                 if os.path.exists(filepath):
                     return filepath
+                
+                # Pre-check: detect if video requires authentication
+                try:
+                    check_opts = {
+                        'quiet': True,
+                        'no_warnings': True,
+                        'extract_flat': False,
+                        'socket_timeout': 15,
+                        'http_headers': {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                        },
+                        'extractor_args': {'youtube': {'player_client': ['web']}}
+                    }
+                    with yt_dlp.YoutubeDL(check_opts) as ydl_check:
+                        ydl_check.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
+                except Exception as check_e:
+                    error_msg = str(check_e)
+                    if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
+                        logger.warning(f'Video {vid_id} requires authentication - skipping YouTube attempt for video, using fallbacks only')
+                        # Return None to skip all yt-dlp attempts
+                        return None
                 
                 # Dynamically build format candidates from extractor info for this vid
                 url_to_check = f'https://www.youtube.com/watch?v={vid_id}'

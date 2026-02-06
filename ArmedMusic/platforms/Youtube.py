@@ -446,9 +446,11 @@ class YouTubeAPI:
                                 return filepath
                         except Exception as e:
                             error_msg = str(e)
-                            # Skip if authentication-related
+                            # Skip if authentication-related or network-related
                             if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
                                 logger.warning(f'Invidious {inst} requires authentication (skipping)')
+                            elif 'Failed to resolve' in error_msg or 'Name or service not known' in error_msg:
+                                logger.warning(f'Invidious {inst} DNS/network error (skipping)')
                             else:
                                 logger.warning(f'Invidious {inst} failed for {vid_id}: {e}')
                 # Try pytube if enabled

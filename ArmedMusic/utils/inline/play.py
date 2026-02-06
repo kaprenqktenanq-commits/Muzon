@@ -24,8 +24,6 @@ def stream_markup_timer(_, chat_id, played, dur):
 
 def stream_markup(_, chat_id, videoid=None):
     buttons = [[InlineKeyboardButton(text='ᐖ', callback_data=f"ADMIN Resume|{chat_id}"), InlineKeyboardButton(text='II', callback_data=f"ADMIN Pause|{chat_id}"), InlineKeyboardButton(text='⟳', callback_data=f"ADMIN Replay|{chat_id}"), InlineKeyboardButton(text='▷▷', callback_data=f"ADMIN Skip|{chat_id}"), InlineKeyboardButton(text='▢', callback_data=f"ADMIN Stop|{chat_id}")]]
-    if videoid:
-        buttons.append([InlineKeyboardButton(text='⬇️ Download', callback_data=f"DownloadTrack|{videoid}")])
     buttons.append([InlineKeyboardButton(text=_['S_B_3'], url=f'https://t.me/{app.username}?startgroup=true')])
     buttons.append([InlineKeyboardButton(text=_['CLOSE_BUTTON'], callback_data=f"closemenu")])
     return buttons

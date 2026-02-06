@@ -1,12 +1,14 @@
 import asyncio
 import glob
+import io
 import json
 import os
 import random
 import re
+import sys
+import string
 from concurrent.futures import ThreadPoolExecutor
 from typing import Union
-import string
 import requests
 import yt_dlp
 from pyrogram.enums import MessageEntityType
@@ -395,24 +397,33 @@ class YouTubeAPI:
                 # Safely attempt to get video info; ensure `info` is always defined
                 info = None
                 requires_auth = False
-                # Pre-check: detect if video requires authentication
+                # Pre-check: detect if video requires authentication (suppress output)
                 try:
-                    check_opts = {
-                        'quiet': True,
-                        'no_warnings': True,
-                        'extract_flat': False,
-                        'socket_timeout': 15,
-                        'http_headers': {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                        },
-                        'extractor_args': {'youtube': {'player_client': ['web']}}
-                    }
-                    with yt_dlp.YoutubeDL(check_opts) as ydl_check:
-                        ydl_check.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
+                    # Suppress stderr and stdout during auth check to avoid confusing logs
+                    old_stderr = sys.stderr
+                    old_stdout = sys.stdout
+                    sys.stderr = io.StringIO()
+                    sys.stdout = io.StringIO()
+                    try:
+                        check_opts = {
+                            'quiet': True,
+                            'no_warnings': True,
+                            'extract_flat': False,
+                            'socket_timeout': 15,
+                            'http_headers': {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                            },
+                            'extractor_args': {'youtube': {'player_client': ['web']}}
+                        }
+                        with yt_dlp.YoutubeDL(check_opts) as ydl_check:
+                            ydl_check.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
+                    finally:
+                        sys.stderr = old_stderr
+                        sys.stdout = old_stdout
                 except Exception as check_e:
                     error_msg = str(check_e)
                     if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
-                        logger.warning(f'Video {vid_id} requires authentication - skipping YouTube attempts, using fallbacks only')
+                        logger.info(f'Video {vid_id} requires authentication - using fallbacks only')
                         requires_auth = True
                     info = None
                 try:
@@ -791,24 +802,33 @@ class YouTubeAPI:
                 if os.path.exists(filepath):
                     return filepath
                 
-                # Pre-check: detect if video requires authentication
+                # Pre-check: detect if video requires authentication (suppress output)
                 try:
-                    check_opts = {
-                        'quiet': True,
-                        'no_warnings': True,
-                        'extract_flat': False,
-                        'socket_timeout': 15,
-                        'http_headers': {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                        },
-                        'extractor_args': {'youtube': {'player_client': ['web']}}
-                    }
-                    with yt_dlp.YoutubeDL(check_opts) as ydl_check:
-                        ydl_check.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
+                    # Suppress stderr and stdout during auth check to avoid confusing logs
+                    old_stderr = sys.stderr
+                    old_stdout = sys.stdout
+                    sys.stderr = io.StringIO()
+                    sys.stdout = io.StringIO()
+                    try:
+                        check_opts = {
+                            'quiet': True,
+                            'no_warnings': True,
+                            'extract_flat': False,
+                            'socket_timeout': 15,
+                            'http_headers': {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                            },
+                            'extractor_args': {'youtube': {'player_client': ['web']}}
+                        }
+                        with yt_dlp.YoutubeDL(check_opts) as ydl_check:
+                            ydl_check.extract_info(f'https://www.youtube.com/watch?v={vid_id}', download=False)
+                    finally:
+                        sys.stderr = old_stderr
+                        sys.stdout = old_stdout
                 except Exception as check_e:
                     error_msg = str(check_e)
                     if 'Sign in to confirm' in error_msg or 'cookies' in error_msg.lower():
-                        logger.warning(f'Video {vid_id} requires authentication - skipping YouTube attempt for video, using fallbacks only')
+                        logger.info(f'Video {vid_id} requires authentication - using fallbacks only')
                         # Return None to skip all yt-dlp attempts
                         return None
                 

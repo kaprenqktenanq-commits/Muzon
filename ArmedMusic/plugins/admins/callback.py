@@ -18,7 +18,7 @@ from ArmedMusic.utils.database import (
     set_loop,
 )
 from ArmedMusic.utils.decorators.language import languageCB
-from ArmedMusic.utils.formatters import seconds_to_min
+from ArmedMusic.utils.formatters import seconds_to_min, remove_emoji
 from ArmedMusic.utils.inline import close_markup, stream_markup, stream_markup_timer
 from ArmedMusic.utils.thumbnails import get_thumb
 from config import (
@@ -335,13 +335,14 @@ async def del_back_playlist(client, CallbackQuery:CallbackQuery, _):
             if videoid == "file_id":
                 button = stream_markup(_, chat_id)
                 msg_link = check[0].get('link', f'https://t.me/{app.username}')
+                display_title = remove_emoji(title)
                 run = await CallbackQuery.message.reply_photo(
                     photo=TELEGRAM_AUDIO_URL
                     if str(streamtype) == "audio"
                     else TELEGRAM_VIDEO_URL,
                     caption=_["stream_1"].format(
                         msg_link,
-                        title,
+                        display_title,
                         duration,
                         user,
                     ),

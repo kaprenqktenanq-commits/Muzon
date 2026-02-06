@@ -6,6 +6,7 @@ from ArmedMusic.core.call import Anony
 from ArmedMusic.misc import db
 from ArmedMusic.utils.database import get_loop
 from ArmedMusic.utils.decorators import AdminRightsCheck
+from ArmedMusic.utils.formatters import remove_emoji
 from ArmedMusic.utils.inline import close_markup, stream_markup
 from ArmedMusic.utils.thumbnails import get_thumb
 from config import BANNED_USERS, autoclean
@@ -178,7 +179,8 @@ async def skip(cli, message: Message, _, chat_id):
         if videoid == 'file_id':
             button = stream_markup(_, chat_id)
             msg_link = check[0].get('link', f'https://t.me/{app.username}')
-            run = await message.reply_photo(photo=config.TELEGRAM_AUDIO_URL if str(streamtype) == 'audio' else config.TELEGRAM_VIDEO_URL, caption=_['stream_1'].format(msg_link, title, check[0]['dur'], user), reply_markup=InlineKeyboardMarkup(button))
+            display_title = remove_emoji(title)
+            run = await message.reply_photo(photo=config.TELEGRAM_AUDIO_URL if str(streamtype) == 'audio' else config.TELEGRAM_VIDEO_URL, caption=_['stream_1'].format(msg_link, display_title, check[0]['dur'], user), reply_markup=InlineKeyboardMarkup(button))
             db[chat_id][0]['mystic'] = run
             db[chat_id][0]['markup'] = 'tg'
         elif videoid == 'soundcloud':

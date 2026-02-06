@@ -10,6 +10,7 @@ from ytSearch import VideosSearch
 from ArmedMusic import app
 from ArmedMusic.utils.decorators.urls import no_preview_filter
 from ArmedMusic.utils.external_extractors import try_external_mp3_extraction
+from ArmedMusic.utils.cookie_handler import get_cookies_file
 from config import BANNED_USERS, YOUTUBE_PROXY
 from ArmedMusic import LOGGER
 logger = LOGGER(__name__)
@@ -56,6 +57,9 @@ async def song_download(client, message: Message):
         ydl_opts = {'quiet': True, 'no_warnings': True, 'extract_flat': False, 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'http_headers': {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-us,en;q=0.5', 'Sec-Fetch-Mode': 'navigate'}}
         if YOUTUBE_PROXY:
             ydl_opts['proxy'] = YOUTUBE_PROXY
+        cookies_file = get_cookies_file()
+        if cookies_file:
+            ydl_opts['cookiefile'] = cookies_file
         loop = asyncio.get_running_loop()
         with ThreadPoolExecutor() as executor:
             info = await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).extract_info(video_url, download=False))
@@ -72,6 +76,9 @@ async def song_download(client, message: Message):
             ydl_opts_audio = {'format': 'bestaudio[ext=m4a]/bestaudio[acodec=mp4a]/140/bestaudio/best[ext=mp4]/best', 'outtmpl': f'downloads/{safe_title}', 'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}], 'quiet': True, 'no_warnings': True, 'retries': 5, 'fragment_retries': 5, 'skip_unavailable_fragments': True}
             if YOUTUBE_PROXY:
                 ydl_opts_audio['proxy'] = YOUTUBE_PROXY
+            cookies_file = get_cookies_file()
+            if cookies_file:
+                ydl_opts_audio['cookiefile'] = cookies_file
             with ThreadPoolExecutor() as executor:
                 await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts_audio).download([video_url]))
             if os.path.exists(filepath):

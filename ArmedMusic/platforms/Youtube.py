@@ -28,6 +28,7 @@ def convert_italic_unicode(text):
     return text.translate(ITALIC_TO_REGULAR)
 
 from config import YT_API_KEY, YTPROXY_URL as YTPROXY, YOUTUBE_PROXY, YOUTUBE_USE_PYTUBE, YOUTUBE_INVIDIOUS_INSTANCES, YOUTUBE_FALLBACK_SEARCH_LIMIT
+from ArmedMusic.utils.cookie_handler import get_cookies_file
 
 logger = LOGGER(__name__)
 
@@ -722,6 +723,9 @@ class YouTubeAPI:
                             ydl_opts = ydl_opts_list[i].copy()
                             if YOUTUBE_PROXY and 'proxy' not in ydl_opts:
                                 ydl_opts['proxy'] = YOUTUBE_PROXY
+                            cookies_file = get_cookies_file()
+                            if cookies_file and 'cookiefile' not in ydl_opts:
+                                ydl_opts['cookiefile'] = cookies_file
                             loop = asyncio.get_running_loop()
                             with ThreadPoolExecutor() as executor:
                                 result = await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).download([f'https://www.youtube.com/watch?v={vid_id}']))
@@ -916,6 +920,9 @@ class YouTubeAPI:
                         }
                         if YOUTUBE_PROXY:
                             ydl_opts['proxy'] = YOUTUBE_PROXY
+                        cookies_file = get_cookies_file()
+                        if cookies_file:
+                            ydl_opts['cookiefile'] = cookies_file
                         loop = asyncio.get_running_loop()
                         with ThreadPoolExecutor() as executor:
                             await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).download([f'https://www.youtube.com/watch?v={vid_id}']))
@@ -1003,6 +1010,9 @@ class YouTubeAPI:
                         }
                         if YOUTUBE_PROXY:
                             ydl_opts['proxy'] = YOUTUBE_PROXY
+                        cookies_file = get_cookies_file()
+                        if cookies_file:
+                            ydl_opts['cookiefile'] = cookies_file
                         loop = asyncio.get_running_loop()
                         with ThreadPoolExecutor() as executor:
                             await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).download([url_to_check]))
@@ -1151,6 +1161,9 @@ class YouTubeAPI:
                         logger.info(f'Trying song audio download configuration {i + 1} for {vid_id}')
                         if YOUTUBE_PROXY and 'proxy' not in ydl_opts:
                             ydl_opts['proxy'] = YOUTUBE_PROXY
+                        cookies_file = get_cookies_file()
+                        if cookies_file and 'cookiefile' not in ydl_opts:
+                            ydl_opts['cookiefile'] = cookies_file
                         loop = asyncio.get_running_loop()
                         with ThreadPoolExecutor() as executor:
                             await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).download([f'https://www.youtube.com/watch?v={vid_id}']))

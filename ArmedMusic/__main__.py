@@ -9,9 +9,13 @@ from ArmedMusic.core.call import Anony
 from ArmedMusic.misc import sudo
 from ArmedMusic.plugins import ALL_MODULES
 from ArmedMusic.utils.database import get_banned_users, get_gbanned
+from ArmedMusic.utils.cookie_handler import validate_cookies
 from config import BANNED_USERS
 
 async def init():
+    # Validate YouTube cookies if available
+    validate_cookies()
+    
     if not config.STRING1 and (not config.STRING2) and (not config.STRING3) and (not config.STRING4) and (not config.STRING5):
         LOGGER(__name__).error('Assistant client variables not defined, exiting...')
         exit()

@@ -1,7 +1,7 @@
 import random
 import string
 from pyrogram import filters
-from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message
+from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message, InlineKeyboardButton
 from pyrogram.errors.exceptions.bad_request_400 import MessageIdInvalid
 from pytgcalls.exceptions import NoActiveGroupCall
 import config
@@ -398,3 +398,21 @@ async def slider_queries(client, CallbackQuery, _):
         buttons = slider_markup(_, vidid, user_id, query, query_type, cplay, fplay)
         med = InputMediaPhoto(media=thumbnail, caption=_['play_10'].format(title.title(), duration_min))
         return await CallbackQuery.edit_message_media(media=med, reply_markup=InlineKeyboardMarkup(buttons))
+
+
+@app.on_callback_query(filters.regex('AddBotToChat') & ~BANNED_USERS)
+@languageCB
+async def add_bot_to_chat(client, CallbackQuery, _):
+    try:
+        url = f'https://t.me/{app.username}?startgroup=true'
+        buttons = [[InlineKeyboardButton(text=_['S_B_3'], url=url)]]
+        await CallbackQuery.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
+        try:
+            await CallbackQuery.answer()
+        except:
+            pass
+    except Exception:
+        try:
+            await CallbackQuery.answer(_['error'] if 'error' in _ else 'Failed to open link.', show_alert=True)
+        except:
+            pass

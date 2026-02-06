@@ -89,7 +89,7 @@ async def stream(_, mystic, user_id, result, chat_id, user_name, original_chat_i
                 await Anony.join_call(chat_id, original_chat_id, file_path, video=status, image=thumbnail)
                 await put_queue(chat_id, original_chat_id, file_path if direct else f'vid_{vidid}', title, duration_min, user_name, vidid, user_id, 'video' if video else 'audio', forceplay=forceplay)
                 img = await get_thumb(vidid, user_id)
-                button = stream_markup(_, chat_id)
+                button = stream_markup(_, chat_id, videoid=vidid)
                 try:
                     run = await app.send_photo(chat_id, photo=img, caption=_['stream_1'].format(f'https://t.me/{app.username}?start=info_{vidid}', title, duration_min, user_name), reply_markup=InlineKeyboardMarkup(button))
                     db[chat_id][0]['mystic'] = run
@@ -137,7 +137,7 @@ async def stream(_, mystic, user_id, result, chat_id, user_name, original_chat_i
             await Anony.join_call(chat_id, original_chat_id, file_path, video=status, image=thumbnail)
             await put_queue(chat_id, original_chat_id, file_path if direct else f'vid_{vidid}', title, duration_min, user_name, vidid, user_id, 'video' if video else 'audio', forceplay=forceplay)
             img = await get_thumb(vidid, user_id)
-            button = stream_markup(_, chat_id)
+            button = stream_markup(_, chat_id, videoid=vidid)
             try:
                 run = await app.send_photo(chat_id, photo=img, caption=_['stream_1'].format(f'https://t.me/{app.username}?start=info_{vidid}', title, duration_min, user_name), reply_markup=InlineKeyboardMarkup(button))
                 db[chat_id][0]['mystic'] = run
@@ -219,7 +219,7 @@ async def stream(_, mystic, user_id, result, chat_id, user_name, original_chat_i
             await Anony.join_call(chat_id, original_chat_id, file_path, video=status, image=thumbnail if thumbnail else None)
             await put_queue(chat_id, original_chat_id, f'live_{vidid}', title, duration_min, user_name, vidid, user_id, 'video' if video else 'audio', forceplay=forceplay)
             img = await get_thumb(vidid, user_id)
-            button = stream_markup(_, chat_id)
+            button = stream_markup(_, chat_id, videoid=vidid)
             try:
                 run = await app.send_photo(chat_id, photo=img, caption=_['stream_1'].format(f'https://t.me/{app.username}?start=info_{vidid}', title, duration_min, user_name), reply_markup=InlineKeyboardMarkup(button))
                 db[chat_id][0]['mystic'] = run

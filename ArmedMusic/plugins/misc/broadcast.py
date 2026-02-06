@@ -47,7 +47,7 @@ async def braodcast_message(client, message: Message, _):
             chats.append(int(chat['chat_id']))
         for i in chats:
             try:
-                m = await app.forward_messages(i, y, x) if message.reply_to_message else await app.send_message(i, text=query)
+                m = await app.forward_messages(i, y, x) if message.reply_to_message else await app.send_message(i, text=query, disable_web_page_preview=True)
                 if '-pin' in message.text:
                     try:
                         await m.pin(disable_notification=True)
@@ -81,7 +81,7 @@ async def braodcast_message(client, message: Message, _):
             served_users.append(int(user['user_id']))
         for i in served_users:
             try:
-                m = await app.forward_messages(i, y, x) if message.reply_to_message else await app.send_message(i, text=query)
+                m = await app.forward_messages(i, y, x) if message.reply_to_message else await app.send_message(i, text=query, disable_web_page_preview=True)
                 susr += 1
                 await asyncio.sleep(0.2)
             except FloodWait as fw:
@@ -104,7 +104,7 @@ async def braodcast_message(client, message: Message, _):
             client = await get_client(num)
             async for dialog in client.get_dialogs():
                 try:
-                    await client.forward_messages(dialog.chat.id, y, x) if message.reply_to_message else await client.send_message(dialog.chat.id, text=query)
+                    await client.forward_messages(dialog.chat.id, y, x) if message.reply_to_message else await client.send_message(dialog.chat.id, text=query, disable_web_page_preview=True)
                     sent += 1
                     await asyncio.sleep(3)
                 except FloodWait as fw:

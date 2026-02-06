@@ -35,7 +35,7 @@ async def download_thumbnail(url: str, filename: str) -> str:
 @app.on_message(filters.command(['song']) & ~BANNED_USERS & no_preview_filter)
 async def song_download(client, message: Message):
     if len(message.command) < 2:
-        return await message.reply_text('Please provide a song name or YouTube URL.\n\nExample: `/song Believer` or `/song https://www.youtube.com/watch?v=7wtfhZwyrcc`')
+        return await message.reply_text('Please provide a song name or YouTube URL.\n\nExample: `/song Believer` or `/song https://www.youtube.com/watch?v=7wtfhZwyrcc`', disable_web_page_preview=True)
     query = message.text.split(None, 1)[1].strip()
     if is_youtube_url(query):
         video_url = query

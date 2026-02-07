@@ -6,7 +6,7 @@ from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message, Inlin
 from pyrogram.errors.exceptions.bad_request_400 import MessageIdInvalid
 from pytgcalls.exceptions import NoActiveGroupCall
 import config
-from ArmedMusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app
+from ArmedMusic import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app, LOGGER
 from ArmedMusic.core.call import Anony
 from ArmedMusic.utils import seconds_to_min, time_to_seconds
 from ArmedMusic.utils.channelplay import get_channeplayCB
@@ -18,6 +18,8 @@ from ArmedMusic.utils.inline import botplaylist_markup, livestream_markup, playl
 from ArmedMusic.utils.logger import play_logs
 from ArmedMusic.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
+
+logger = LOGGER(__name__)
 
 @app.on_message(filters.command(['play', 'vplay', 'cplay', 'cvplay', 'playforce', 'vplayforce', 'cplayforce', 'cvplayforce']) & filters.group & ~BANNED_USERS & no_preview_filter)
 @PlayWrapper
@@ -472,14 +474,9 @@ async def download_track(client, CallbackQuery, _):
     except:
         pass
     
-    download_msg = await CallbackQuery.message.reply_text('⏳ Downloading music... Please wait.')
+    download_msg = await CallbackQuery.message.reply_text('⏳ Starting download using external sources...')
     try:
-        ydl_opts = {'quiet': True, 'no_warnings': True, 'extract_flat': False, 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-        if config.YOUTUBE_PROXY:
-            ydl_opts['proxy'] = config.YOUTUBE_PROXY
         import asyncio
-        from concurrent.futures import ThreadPoolExecutor
-        import yt_dlp
         import os
         import re
         from ArmedMusic.utils.external_extractors import try_external_mp3_extraction
@@ -487,37 +484,16 @@ async def download_track(client, CallbackQuery, _):
         loop = asyncio.get_running_loop()
         video_url = f'https://www.youtube.com/watch?v={videoid}'
         
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            info = await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts).extract_info(video_url, download=False))
+        # Use video ID as fallback title since yt-dlp metadata extraction may fail with auth errors
+        title = f'song_{videoid}'
+        filepath = f'downloads/{title}.mp3'
         
-        title = info.get('title', 'Unknown')
-        uploader = info.get('uploader', 'Unknown Artist')
-        duration = info.get('duration', 0)
-        thumbnail_url = info.get('thumbnail', '')
-        safe_title = re.sub('[<>:"/\\\\|?*]', '', f'{title} - {uploader}')
-        filepath = f'downloads/{safe_title}.mp3'
+        # Use ONLY external MP3 extraction services
+        logger.info(f'Downloading via external services: {video_url}')
+        result = await try_external_mp3_extraction(video_url, filepath)
         
-        download_success = False
-        try:
-            ydl_opts_audio = {'format': 'bestaudio[ext=m4a]/bestaudio[acodec=mp4a]/140/bestaudio/best[ext=mp4]/best', 'outtmpl': f'downloads/{safe_title}', 'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}], 'quiet': True, 'no_warnings': True, 'retries': 5, 'fragment_retries': 5, 'skip_unavailable_fragments': True}
-            if config.YOUTUBE_PROXY:
-                ydl_opts_audio['proxy'] = config.YOUTUBE_PROXY
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts_audio).download([video_url]))
-            if os.path.exists(filepath):
-                download_success = True
-        except Exception as ydl_error:
-            pass
-        
-        # Fallback to external services
-        if not download_success:
-            await download_msg.edit_text('🔄 Trying alternative download method...')
-            result = await try_external_mp3_extraction(video_url, filepath)
-            if result:
-                download_success = True
-        
-        if not download_success:
-            await download_msg.edit_text('❌ Failed to download the song from all sources.')
+        if not result or not os.path.exists(filepath):
+            await download_msg.edit_text('❌ Failed to download the song. YouTube requires authentication.')
             return
         
         from pyrogram.types import Message as TGMessage

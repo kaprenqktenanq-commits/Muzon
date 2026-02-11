@@ -6,8 +6,8 @@ from pyrogram import filters
 
 load_dotenv()
 
-API_ID = int(getenv("API_ID", "27638882"))
-API_HASH = getenv("API_HASH", "f745cdd5ddb46cf841d6990048f52935")
+API_ID = int(getenv("API_ID", "21457002"))
+API_HASH = getenv("API_HASH", "6f9f6b8fb05ef1f4d9916e901f27bf52")
 
 BOT_TOKEN = getenv("BOT_TOKEN", "8568049660:AAHZl3Wg5b-MTXBjhQbsn9MrP9cCKbWjgDs")
 
@@ -52,7 +52,7 @@ DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 300))
 
 LOGGER_ID = int(getenv("LOGGER_ID", "-1003142281080"))
 
-OWNER_ID = int(getenv("OWNER_ID", "7976004718"))
+OWNER_ID = int(getenv("OWNER_ID", "8557740388"))
 
 AUTO_LEAVING_ASSISTANT = bool(getenv("AUTO_LEAVING_ASSISTANT", False))
 ASSISTANT_LEAVE_TIME = int(getenv("ASSISTANT_LEAVE_TIME",  5400))

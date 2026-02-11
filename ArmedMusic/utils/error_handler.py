@@ -4,7 +4,7 @@ Error handling utilities for the bot
 import asyncio
 from typing import Callable, Any, Optional
 from functools import wraps
-from pyrogram.errors import UnknownError, FloodWait, ServerError
+from pyrogram.errors import UnknownError, FloodWait
 from ntgcalls import TelegramServerError
 from ..logging import LOGGER
 
@@ -36,10 +36,8 @@ class ErrorHandler:
             await asyncio.sleep(5)
             return True
             
-        if isinstance(error, ServerError):
-            LOGGER(__name__).error(f"ServerError in {operation}: {error}")
-            await asyncio.sleep(3)
-            return True
+        # `ServerError` was removed from newer pyrogram versions; treat
+        # unknown server errors using the generic UnknownError branch above.
             
         return False
 

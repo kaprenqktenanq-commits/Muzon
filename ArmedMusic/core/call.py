@@ -5,6 +5,17 @@ from typing import Union
 
 from pyrogram import Client
 from pyrogram.types import InlineKeyboardMarkup
+
+# Ensure compatibility: some pytgcalls versions expect
+# `GroupcallForbidden` to exist in `pyrogram.errors`.
+import pyrogram
+from pyrogram import errors as py_errors
+if not hasattr(py_errors, 'GroupcallForbidden'):
+    class GroupcallForbidden(Exception):
+        """Compatibility shim for missing GroupcallForbidden."""
+        pass
+    py_errors.GroupcallForbidden = GroupcallForbidden
+
 from pytgcalls import PyTgCalls
 from pytgcalls.exceptions import (
     NoActiveGroupCall,

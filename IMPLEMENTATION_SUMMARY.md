@@ -14,41 +14,8 @@ This occurs because:
 
 ## Solution Implemented
 
-### 1. **Created Cookie Handler Utility** (`ArmedMusic/utils/cookie_handler.py`)
-Provides:
-- `validate_cookies()` - Validates and fixes cookie format at startup
-- `fix_cookies_format()` - Removes leading dots from domain names (Netscape format)
-- `get_cookies_file()` - Returns path to valid cookies file or None
-- `ensure_cookies_directory()` - Creates cookies directory if needed
-
-### 2. **Updated Song Download Plugin** (`ArmedMusic/plugins/tools/song.py`)
-- Added import for `get_cookies_file()`
-- Modified yt-dlp options to include cookies when available
-- Applied to both extraction info and audio download phases
-
-### 3. **Updated YouTube Platform Handler** (`ArmedMusic/platforms/Youtube.py`)
-Updated all yt-dlp instances to use cookies:
-- Direct video download configurations
-- Multiple fallback format attempts
-- Song audio extraction
-- Applies to ~3 different download methods
-
-### 4. **Added Bot Initialization** (`ArmedMusic/__main__.py`)
-- Added `validate_cookies()` call at startup
-- Automatically fixes cookie format if needed
-- Logs validation results
-
-### 5. **Improved Cookie Fixer Script** (`fix_cookies.py`)
-- Made it a proper reusable function
-- Added error handling
-- Can be run standalone: `python fix_cookies.py`
-
-### 6. **Created Documentation** (`YOUTUBE_COOKIES_SETUP.md`)
-Provides users with:
-- Methods to export cookies (browser extensions, yt-dlp commands)
-- Step-by-step setup instructions
-- Troubleshooting guide
-- Security warnings
+### Cookie handling removed
+The project no longer includes cookie-based YouTube authentication utilities. To avoid the bot encountering cookie-related authentication errors, the codebase was simplified to operate without YouTube cookies. This change removes automatic cookie validation and setup; the bot will rely on external extractors, proxies, and yt-dlp without cookie injection. Restricted videos that require login cannot be accessed without cookies.
 
 ## How It Works
 
@@ -115,10 +82,5 @@ All changes pass syntax validation with no errors. The implementation:
 
 ## Next Steps for Users
 
-1. Read `YOUTUBE_COOKIES_SETUP.md` for detailed cookie instructions
-2. Export YouTube cookies using the recommended method
-3. Place in `cookies/youtube_cookies.txt`
-4. Restart the bot
-5. Test with `/song` command
-
-The bot will now support YouTube downloads with proper authentication!
+1. If you want to support restricted videos, consider providing an authenticated proxy or enabling cookies manually (not included).
+2. Restart the bot and test `/song` — the bot avoids cookie operations and will not log cookie-auth errors.

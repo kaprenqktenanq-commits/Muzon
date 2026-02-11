@@ -55,12 +55,7 @@ Fallback list for music download:
 **Code:** `ArmedMusic/platforms/Youtube.py` → `video()` method
 
 ### ✅ YouTube Authentication
-- Cookie-based authentication for restricted content
-- Browser cookie export support
-- Automatic cookie format validation
-- Graceful degradation without cookies
-
-**Code:** `fix_cookies.py`, `ArmedMusic/utils/cookie_handler.py`
+Cookie-based authentication utilities have been removed. The bot now operates without injecting cookies into `yt-dlp` calls. Restricted videos that require login will remain inaccessible unless an authenticated proxy or manual cookie support is added back.
 
 ### ✅ Error Handling & Logging
 - Detailed debug logging at each fallback stage

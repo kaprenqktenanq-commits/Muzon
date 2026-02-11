@@ -14,7 +14,7 @@ pillow>=11.0.0
 psutil>=6.0.0
 pyrogram>=2.0.106
 py-tgcalls>=2.2.11
-pykeyboard>=0.1.8
+pykeyboard==0.1.5
 python-dotenv>=1.0.0
 pyyaml>=6.0.0
 requests>=2.31.0

@@ -314,6 +314,47 @@ class YouTubeAPI:
                     logger.debug(f'Invidious search failed with {inst}: {e}')
                     continue
         
+        # Fallback: Try YouTube API if other methods fail
+        if YT_API_KEY and YT_API_KEY != 'AIzaSyAyFW-9snpxGwFa5cu-p81jjE8Fg1h_6rk':
+            try:
+                search_url = f"https://www.googleapis.com/youtube/v3/search?q={link.replace(' ', '+')}&type=video&part=snippet&key={YT_API_KEY}&maxResults=1"
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(search_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if 'items' in data and len(data['items']) > 0:
+                                item = data['items'][0]
+                                vid_id = item['id']['videoId']
+                                title = item['snippet']['title']
+                                thumbnail = item['snippet']['thumbnails'].get('high', {}).get('url', '')
+                                
+                                # Get duration from video details
+                                details_url = f"https://www.googleapis.com/youtube/v3/videos?id={vid_id}&part=contentDetails&key={YT_API_KEY}"
+                                async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as details_resp:
+                                    if details_resp.status == 200:
+                                        details_data = await details_resp.json()
+                                        if 'items' in details_data and len(details_data['items']) > 0:
+                                            duration_iso = details_data['items'][0]['contentDetails']['duration']
+                                            # Parse ISO 8601 duration (PT1H2M3S -> 1:02:03)
+                                            import re as regex
+                                            duration_regex = regex.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
+                                            match = duration_regex.match(duration_iso)
+                                            if match:
+                                                hours = int(match.group(1) or 0)
+                                                minutes = int(match.group(2) or 0)
+                                                seconds = int(match.group(3) or 0)
+                                                total_secs = hours * 3600 + minutes * 60 + seconds
+                                                duration_min = f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
+                                            else:
+                                                duration_min = "0:00"
+                                
+                                yturl = f"https://www.youtube.com/watch?v={vid_id}"
+                                track_details = {'title': title, 'link': yturl, 'vidid': vid_id, 'duration_min': duration_min, 'thumb': thumbnail}
+                                logger.info(f'YouTube API search succeeded for "{link}"')
+                                return (track_details, vid_id)
+            except Exception as e:
+                logger.debug(f'YouTube API search failed: {e}')
+        
         raise ValueError("ꜰᴀɪʟᴇᴅ ᴛᴏ ꜰᴇᴛᴄʜ ᴛʀᴀᴄᴋ ᴅᴇᴛᴀɪʟs. ᴛʀʏ ᴘʟᴀʏɪɴɢ ᴀɴʏ ᴏᴛʜᴇʀ.")
 
     async def formats(self, link: str, videoid: Union[bool, str]=None):

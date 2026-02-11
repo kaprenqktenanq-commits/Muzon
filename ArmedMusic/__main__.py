@@ -2,7 +2,7 @@ import asyncio
 import importlib
 import sys
 from pyrogram import idle
-from pyrogram.errors import FloodWait, UnknownError, ServerError
+from pyrogram.errors import FloodWait, UnknownError
 from pytgcalls.exceptions import NoActiveGroupCall
 from ntgcalls import TelegramServerError
 import config
@@ -120,7 +120,7 @@ def _handle_loop_exception(loop, context):
                 LOGGER(__name__).warning(f"Telegram server error (transient): {error}")
                 return
             
-            if isinstance(error, (UnknownError, ServerError)):
+            if isinstance(error, UnknownError):
                 LOGGER(__name__).warning(f"Telegram API error (may be transient): {error}")
                 return
             

@@ -16,7 +16,7 @@ from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from ytSearch import VideosSearch, CustomSearch
+from youtubesearchpython import VideosSearch, CustomSearch
 import base64
 import subprocess
 from ArmedMusic import LOGGER

@@ -8,7 +8,7 @@ import subprocess
 import json
 from pyrogram import filters
 from pyrogram.types import Message
-from ytSearch import VideosSearch
+from youtubesearchpython import VideosSearch
 from ArmedMusic import app
 from ArmedMusic.utils.decorators.urls import no_preview_filter
 from ArmedMusic.utils.external_extractors import try_external_mp3_extraction

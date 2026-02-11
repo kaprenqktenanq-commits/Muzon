@@ -156,7 +156,6 @@ async def init():
     await idle()
     await app.stop()
     LOGGER('ArmedMusic').info('Stopping Armed Music Bot...')
-if __name__ == '__main__':
 def _handle_loop_exception(loop, context):
     try:
         msg = context.get('exception', context.get('message'))

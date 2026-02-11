@@ -269,22 +269,27 @@ class YouTubeAPI:
         elif '&si=' in link:
             link = link.split('&si=')[0]
         
-        # Try primary search method
-        try:
-            results = VideosSearch(link, limit=1)
-            res = await results.next()
-            results_list = res['result']
-            if results_list:
-                for result in results_list:
-                    title = result['title']
-                    duration_min = result['duration']
-                    vidid = result['id']
-                    yturl = result['link']
-                    thumbnail = result['thumbnails'][0]['url'].split('?')[0]
-                track_details = {'title': title, 'link': yturl, 'vidid': vidid, 'duration_min': duration_min, 'thumb': thumbnail}
-                return (track_details, vidid)
-        except Exception as e:
-            logger.debug(f'Primary search failed for "{link}": {e}')
+        # Try primary search method with exponential backoff
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                results = VideosSearch(link, limit=1)
+                res = await results.next()
+                results_list = res['result']
+                if results_list:
+                    for result in results_list:
+                        title = result['title']
+                        duration_min = result['duration']
+                        vidid = result['id']
+                        yturl = result['link']
+                        thumbnail = result['thumbnails'][0]['url'].split('?')[0]
+                    track_details = {'title': title, 'link': yturl, 'vidid': vidid, 'duration_min': duration_min, 'thumb': thumbnail}
+                    logger.info(f'✓ VideosSearch succeeded for "{link}"')
+                    return (track_details, vidid)
+            except Exception as e:
+                logger.debug(f'VideosSearch attempt {attempt + 1}/{max_retries} failed for "{link}": {e}')
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(0.5)  # Brief backoff before retry
         
         # Fallback: Try Invidious instances if primary search fails
         if YOUTUBE_INVIDIOUS_INSTANCES:
@@ -308,14 +313,14 @@ class YouTubeAPI:
                                     
                                     yturl = f"https://www.youtube.com/watch?v={vid_id}"
                                     track_details = {'title': title, 'link': yturl, 'vidid': vid_id, 'duration_min': duration_min, 'thumb': thumbnail}
-                                    logger.info(f'Invidious search succeeded for "{link}" using {inst}')
+                                    logger.info(f'✓ Invidious search succeeded for "{link}" using {inst}')
                                     return (track_details, vid_id)
                 except Exception as e:
                     logger.debug(f'Invidious search failed with {inst}: {e}')
                     continue
         
         # Fallback: Try YouTube API if other methods fail
-        if YT_API_KEY and YT_API_KEY != 'AIzaSyAyFW-9snpxGwFa5cu-p81jjE8Fg1h_6rk':
+        if YT_API_KEY:
             try:
                 search_url = f"https://www.googleapis.com/youtube/v3/search?q={link.replace(' ', '+')}&type=video&part=snippet&key={YT_API_KEY}&maxResults=1"
                 async with aiohttp.ClientSession() as session:
@@ -343,14 +348,13 @@ class YouTubeAPI:
                                                 hours = int(match.group(1) or 0)
                                                 minutes = int(match.group(2) or 0)
                                                 seconds = int(match.group(3) or 0)
-                                                total_secs = hours * 3600 + minutes * 60 + seconds
                                                 duration_min = f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
                                             else:
                                                 duration_min = "0:00"
                                 
                                 yturl = f"https://www.youtube.com/watch?v={vid_id}"
                                 track_details = {'title': title, 'link': yturl, 'vidid': vid_id, 'duration_min': duration_min, 'thumb': thumbnail}
-                                logger.info(f'YouTube API search succeeded for "{link}"')
+                                logger.info(f'✓ YouTube API search succeeded for "{link}"')
                                 return (track_details, vid_id)
             except Exception as e:
                 logger.debug(f'YouTube API search failed: {e}')

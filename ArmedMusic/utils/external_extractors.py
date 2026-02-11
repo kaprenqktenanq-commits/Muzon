@@ -46,7 +46,25 @@ EXTERNAL_SERVICES = [
         'api': 'https://api.tube2mp3.com/convert',
         'method': 'POST',
         'url_param': 'url'
-    }
+    },
+    {
+        'name': 'savefrom.net',
+        'api': 'https://savefrom.net/api/info',
+        'method': 'GET',
+        'url_param': 'url'
+    },
+    {
+        'name': 'mp3juices.cc',
+        'api': 'https://mp3juices.cc/api/convert',
+        'method': 'POST',
+        'url_param': 'url'
+    },
+    {
+        'name': 'getmp3.cc',
+        'api': 'https://getmp3.cc/api/convert',
+        'method': 'POST',
+        'url_param': 'url'
+    },
 ]
 
 async def try_external_mp3_extraction(video_url: str, filepath: str) -> Optional[str]:

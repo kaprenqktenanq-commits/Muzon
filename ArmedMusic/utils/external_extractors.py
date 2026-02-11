@@ -2,6 +2,10 @@
 import asyncio
 import aiohttp
 from typing import Optional
+import logging
+
+# Setup logger for external extractors
+logger = logging.getLogger(__name__)
 
 # External MP3 extraction services that work as cloud converters
 EXTERNAL_SERVICES = [
@@ -81,9 +85,12 @@ async def try_external_mp3_extraction(video_url: str, filepath: str) -> Optional
     import random
     random.shuffle(services)
     
-    for service in services:
+    failed_services = []
+    
+    for idx, service in enumerate(services, 1):
         try:
             service_name = service.get('name', 'unknown')
+            logger.debug(f'[{idx}/{len(services)}] Trying {service_name}...')
             
             if service_name == 'cobalt.tools':
                 # Try cobalt.tools API
@@ -98,20 +105,31 @@ async def try_external_mp3_extraction(video_url: str, filepath: str) -> Optional
                         async with session.post(
                             service['api'],
                             json=payload,
-                            timeout=aiohttp.ClientTimeout(total=30)
+                            timeout=aiohttp.ClientTimeout(total=30),
+                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                         ) as resp:
                             if resp.status == 200:
                                 data = await resp.json()
                                 if 'url' in data:
                                     # Download the file
-                                    async with session.get(data['url']) as download_resp:
+                                    async with session.get(data['url'], timeout=aiohttp.ClientTimeout(total=60)) as download_resp:
                                         if download_resp.status == 200:
                                             os.makedirs(os.path.dirname(filepath), exist_ok=True)
                                             with open(filepath, 'wb') as f:
                                                 f.write(await download_resp.read())
+                                            logger.info(f'✓ {service_name} succeeded')
                                             return filepath
+                                    logger.debug(f'{service_name}: failed to download file')
+                                    failed_services.append((service_name, 'No valid URL in response'))
+                                else:
+                                    logger.debug(f'{service_name}: missing URL in response')
+                                    failed_services.append((service_name, 'No URL in response'))
+                            else:
+                                logger.debug(f'{service_name}: HTTP {resp.status}')
+                                failed_services.append((service_name, f'HTTP {resp.status}'))
                 except Exception as e:
-                    continue
+                    logger.debug(f'{service_name}: {str(e)[:100]}')
+                    failed_services.append((service_name, str(e)[:50]))
             
             elif service_name == 'yt-dlp-api1':
                 # Try online converter API
@@ -121,20 +139,31 @@ async def try_external_mp3_extraction(video_url: str, filepath: str) -> Optional
                         async with session.get(
                             service['api'],
                             params=params,
-                            timeout=aiohttp.ClientTimeout(total=30)
+                            timeout=aiohttp.ClientTimeout(total=30),
+                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                         ) as resp:
                             if resp.status == 200:
                                 data = await resp.json()
                                 if 'link' in data or 'url' in data:
                                     mp3_url = data.get('link') or data.get('url')
-                                    async with session.get(mp3_url) as download_resp:
+                                    async with session.get(mp3_url, timeout=aiohttp.ClientTimeout(total=60)) as download_resp:
                                         if download_resp.status == 200:
                                             os.makedirs(os.path.dirname(filepath), exist_ok=True)
                                             with open(filepath, 'wb') as f:
                                                 f.write(await download_resp.read())
+                                            logger.info(f'✓ {service_name} succeeded')
                                             return filepath
+                                    logger.debug(f'{service_name}: failed to download file')
+                                    failed_services.append((service_name, 'Download failed'))
+                                else:
+                                    logger.debug(f'{service_name}: no url in response')
+                                    failed_services.append((service_name, 'No URL in response'))
+                            else:
+                                logger.debug(f'{service_name}: HTTP {resp.status}')
+                                failed_services.append((service_name, f'HTTP {resp.status}'))
                 except Exception as e:
-                    continue
+                    logger.debug(f'{service_name}: {str(e)[:100]}')
+                    failed_services.append((service_name, str(e)[:50]))
             
             elif service_name == 'ympe.co':
                 # Try YMPE API
@@ -144,20 +173,31 @@ async def try_external_mp3_extraction(video_url: str, filepath: str) -> Optional
                         async with session.post(
                             service['api'],
                             data=payload,
-                            timeout=aiohttp.ClientTimeout(total=30)
+                            timeout=aiohttp.ClientTimeout(total=30),
+                            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                         ) as resp:
                             if resp.status == 200:
                                 data = await resp.json()
                                 if 'url' in data or 'downloadLink' in data:
                                     mp3_url = data.get('url') or data.get('downloadLink')
-                                    async with session.get(mp3_url) as download_resp:
+                                    async with session.get(mp3_url, timeout=aiohttp.ClientTimeout(total=60)) as download_resp:
                                         if download_resp.status == 200:
                                             os.makedirs(os.path.dirname(filepath), exist_ok=True)
                                             with open(filepath, 'wb') as f:
                                                 f.write(await download_resp.read())
+                                            logger.info(f'✓ {service_name} succeeded')
                                             return filepath
+                                    logger.debug(f'{service_name}: failed to download')
+                                    failed_services.append((service_name, 'Download failed'))
+                                else:
+                                    logger.debug(f'{service_name}: no download link')
+                                    failed_services.append((service_name, 'No URL in response'))
+                            else:
+                                logger.debug(f'{service_name}: HTTP {resp.status}')
+                                failed_services.append((service_name, f'HTTP {resp.status}'))
                 except Exception as e:
-                    continue
+                    logger.debug(f'{service_name}: {str(e)[:100]}')
+                    failed_services.append((service_name, str(e)[:50]))
             
             else:
                 # Generic handler for other services
@@ -171,41 +211,69 @@ async def try_external_mp3_extraction(video_url: str, filepath: str) -> Optional
                             async with session.get(
                                 service['api'],
                                 params=params,
-                                timeout=aiohttp.ClientTimeout(total=30)
+                                timeout=aiohttp.ClientTimeout(total=30),
+                                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                             ) as resp:
                                 if resp.status == 200:
                                     data = await resp.json()
                                     # Try common response keys
                                     mp3_url = data.get('url') or data.get('downloadLink') or data.get('link') or data.get('download')
                                     if mp3_url:
-                                        async with session.get(mp3_url) as download_resp:
+                                        async with session.get(mp3_url, timeout=aiohttp.ClientTimeout(total=60)) as download_resp:
                                             if download_resp.status == 200:
                                                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
                                                 with open(filepath, 'wb') as f:
                                                     f.write(await download_resp.read())
+                                                logger.info(f'✓ {service_name} succeeded')
                                                 return filepath
+                                        logger.debug(f'{service_name}: download failed')
+                                        failed_services.append((service_name, 'Download failed'))
+                                    else:
+                                        logger.debug(f'{service_name}: no URL key found')
+                                        failed_services.append((service_name, 'No URL key'))
+                                else:
+                                    logger.debug(f'{service_name}: HTTP {resp.status}')
+                                    failed_services.append((service_name, f'HTTP {resp.status}'))
                         else:  # POST
                             payload = {url_param: video_url}
                             async with session.post(
                                 service['api'],
                                 json=payload,
-                                timeout=aiohttp.ClientTimeout(total=30)
+                                timeout=aiohttp.ClientTimeout(total=30),
+                                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
                             ) as resp:
                                 if resp.status == 200:
                                     data = await resp.json()
                                     mp3_url = data.get('url') or data.get('downloadLink') or data.get('link') or data.get('download')
                                     if mp3_url:
-                                        async with session.get(mp3_url) as download_resp:
+                                        async with session.get(mp3_url, timeout=aiohttp.ClientTimeout(total=60)) as download_resp:
                                             if download_resp.status == 200:
                                                 os.makedirs(os.path.dirname(filepath), exist_ok=True)
                                                 with open(filepath, 'wb') as f:
                                                     f.write(await download_resp.read())
+                                                logger.info(f'✓ {service_name} succeeded')
                                                 return filepath
+                                        logger.debug(f'{service_name}: download failed')
+                                        failed_services.append((service_name, 'Download failed'))
+                                    else:
+                                        logger.debug(f'{service_name}: no URL key')
+                                        failed_services.append((service_name, 'No URL key'))
+                                else:
+                                    logger.debug(f'{service_name}: HTTP {resp.status}')
+                                    failed_services.append((service_name, f'HTTP {resp.status}'))
                 except Exception as e:
-                    continue
+                    logger.debug(f'{service_name}: {str(e)[:100]}')
+                    failed_services.append((service_name, str(e)[:50]))
         
         except Exception as service_error:
-            continue
+            logger.debug(f'{service.get("name", "unknown")}: Unexpected error: {service_error}')
+            failed_services.append((service.get('name', 'unknown'), str(service_error)[:50]))
+    
+    # Log all failures for debugging
+    if failed_services:
+        logger.warning(f'All {len(failed_services)} external services failed:')
+        for svc_name, reason in failed_services:
+            logger.debug(f'  - {svc_name}: {reason}')
     
     return None
 

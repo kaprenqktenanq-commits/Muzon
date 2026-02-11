@@ -85,37 +85,9 @@ async def song_download(client, message: Message):
             duration = 0
             thumbnail_url = ''
         
-        # ===== STEP 2: Get metadata with yt-dlp (quiet mode) =====
-        try:
-            await processing_msg.edit_text('🔄 Getting video info...')
-            check_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'extract_flat': False,
-                'socket_timeout': 15,
-                'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            }
-            if YOUTUBE_PROXY:
-                check_opts['proxy'] = YOUTUBE_PROXY
-            
-            loop = asyncio.get_running_loop()
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                info = await loop.run_in_executor(
-                    executor, 
-                    lambda: yt_dlp.YoutubeDL(check_opts).extract_info(video_url, download=False)
-                )
-            
-            title = info.get('title', 'Unknown')
-            uploader = info.get('uploader', 'Unknown')
-            duration = info.get('duration', 0)
-            thumbnail_url = info.get('thumbnail', '')
-            logger.info(f'Got metadata: {title} by {uploader}')
-        except Exception as e:
-            logger.warning(f'Could not get full metadata: {e}')
-            title = 'Unknown'
-            uploader = 'Unknown'
+        # ===== STEP 2: Skip metadata extraction (causes YouTube auth errors) =====
+        # We use default values to avoid triggering YouTube authentication requirements
+        logger.debug(f'Skipping metadata extraction to avoid YouTube authentication errors')
         
         safe_title = re.sub('[<>:"/\\\\|?*]', '', f'{title} - {uploader}')
         filepath = f'downloads/{safe_title}.mp3'

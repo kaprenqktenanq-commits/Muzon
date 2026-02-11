@@ -271,13 +271,24 @@ class Call(PyTgCalls):
         await assistant.play(chat_id, stream)
 
     async def stream_call(self, link):
-        assistant = await group_assistant(self, config.LOGGER_ID)
-        await assistant.play(
-            config.LOGGER_ID,
-            MediaStream(link)
-        )
-        await asyncio.sleep(0.2)
-        await assistant.leave_call(config.LOGGER_ID)
+        """Stream test call to log group"""
+        try:
+            assistant = await group_assistant(self, config.LOGGER_ID)
+            await assistant.play(
+                config.LOGGER_ID,
+                MediaStream(link)
+            )
+            await asyncio.sleep(0.2)
+            await assistant.leave_call(config.LOGGER_ID)
+            LOGGER(__name__).info("✓ Stream test successful")
+        except NoActiveGroupCall:
+            LOGGER(__name__).error("No active group call in log channel. Enable voice chat.")
+            raise
+        except TelegramServerError as e:
+            LOGGER(__name__).warning(f"Server error during stream test (will retry): {e}")
+            await asyncio.sleep(3)
+        except Exception as e:
+            LOGGER(__name__).error(f"Stream test error: {type(e).__name__}: {e}")
 
     async def join_call(
         self,
@@ -597,17 +608,26 @@ class Call(PyTgCalls):
         return str(round(sum(pings) / len(pings), 3))
 
     async def start(self):
+        """Start all PyTgCalls instances with error handling"""
         LOGGER(__name__).info("Starting PyTgCalls Client...\n")
-        if config.STRING1:
-            await self.one.start()
-        if config.STRING2:
-            await self.two.start()
-        if config.STRING3:
-            await self.three.start()
-        if config.STRING4:
-            await self.four.start()
-        if config.STRING5:
-            await self.five.start()
+        
+        instances = [
+            (config.STRING1, self.one, "PyTgCalls-1"),
+            (config.STRING2, self.two, "PyTgCalls-2"),
+            (config.STRING3, self.three, "PyTgCalls-3"),
+            (config.STRING4, self.four, "PyTgCalls-4"),
+            (config.STRING5, self.five, "PyTgCalls-5"),
+        ]
+        
+        for session, instance, name in instances:
+            if session:
+                try:
+                    await instance.start()
+                    LOGGER(__name__).info(f"✓ {name} started successfully")
+                except Exception as e:
+                    LOGGER(__name__).error(f"✗ {name} failed to start: {type(e).__name__}: {e}")
+                    # Continue with other instances
+                    await asyncio.sleep(1)
 
     async def decorators(self):
         @self.one.on_update(

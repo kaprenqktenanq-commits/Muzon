@@ -131,59 +131,83 @@ class YouTubeAPI:
         elif '&si=' in link:
             link = link.split('&si=')[0]
         
+        # Extract video ID if link is a URL
+        video_id = None
+        if 'watch?v=' in link:
+            try:
+                video_id = link.split('watch?v=')[1].split('&')[0]
+            except:
+                pass
+        
+        # Fallback: Try YouTube API first (more reliable than VideosSearch)
+        if YT_API_KEY and video_id:
+            try:
+                logger.debug(f'Trying YouTube API for details: {video_id}')
+                details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet,contentDetails&key={YT_API_KEY}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if 'items' in data and len(data['items']) > 0:
+                                item = data['items'][0]
+                                title = item['snippet']['title']
+                                thumbnail = item['snippet']['thumbnails'].get('high', {}).get('url', '')
+                                duration_iso = item['contentDetails']['duration']
+                                
+                                import re as regex
+                                duration_regex = regex.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
+                                match = duration_regex.match(duration_iso)
+                                if match:
+                                    hours = int(match.group(1) or 0)
+                                    minutes = int(match.group(2) or 0)
+                                    seconds = int(match.group(3) or 0)
+                                    duration_sec = hours * 3600 + minutes * 60 + seconds
+                                    duration_min = f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
+                                else:
+                                    duration_min = "0:00"
+                                    duration_sec = 0
+                                
+                                logger.info(f'✓ YouTube API details: {title}')
+                                return (title, duration_min, duration_sec, thumbnail, video_id)
+            except Exception as e:
+                logger.debug(f'YouTube API details failed: {e}')
+        
         # Try VideosSearch with retry
         for attempt in range(2):
             try:
+                logger.debug(f'Trying VideosSearch details attempt {attempt + 1}/2')
                 results = VideosSearch(link, limit=1)
-                for result in (await results.next())['result']:
+                res = await results.next()
+                if res.get('result'):
+                    result = res['result'][0]
                     title = result['title']
                     title = convert_italic_unicode(title)
                     duration_min = result['duration']
-                    thumbnail = result['thumbnails'][0]['url'].split('?')[0]
+                    thumbnail = result['thumbnails'][0]['url'].split('?')[0] if result.get('thumbnails') else ''
                     vidid = result['id']
                     if str(duration_min) == 'None':
                         duration_sec = 0
                     else:
-                        duration_sec = int(time_to_seconds(duration_min))
-                return (title, duration_min, duration_sec, thumbnail, vidid)
+                        try:
+                            duration_sec = int(time_to_seconds(duration_min))
+                        except:
+                            duration_sec = 0
+                    logger.info(f'✓ VideosSearch details: {title}')
+                    return (title, duration_min, duration_sec, thumbnail, vidid)
             except Exception as e:
                 logger.debug(f'VideosSearch details attempt {attempt + 1}/2 failed: {e}')
                 if attempt == 0:
                     await asyncio.sleep(0.5)
         
-        # Fallback using YouTube API
+        # Last fallback: return minimal data from URL if available
         try:
-            video_id = link.split('watch?v=')[-1].split('&')[0] if 'watch?v=' in link else link
-            details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet,contentDetails&key={YT_API_KEY}"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        if 'items' in data and len(data['items']) > 0:
-                            item = data['items'][0]
-                            title = item['snippet']['title']
-                            thumbnail = item['snippet']['thumbnails'].get('high', {}).get('url', '')
-                            duration_iso = item['contentDetails']['duration']
-                            
-                            import re as regex
-                            duration_regex = regex.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
-                            match = duration_regex.match(duration_iso)
-                            if match:
-                                hours = int(match.group(1) or 0)
-                                minutes = int(match.group(2) or 0)
-                                seconds = int(match.group(3) or 0)
-                                duration_sec = hours * 3600 + minutes * 60 + seconds
-                                duration_min = f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
-                            else:
-                                duration_min = "0:00"
-                                duration_sec = 0
-                            
-                            vidid = video_id
-                            return (title, duration_min, duration_sec, thumbnail, vidid)
-        except Exception as e:
-            logger.debug(f'YouTube API details fallback failed: {e}')
+            if video_id:
+                logger.warning(f'Using fallback minimal data for video_id: {video_id}')
+                return (f"Video {video_id}", "0:00", 0, "", video_id)
+        except:
+            pass
         
-        raise ValueError("Failed to fetch video details")
+        raise ValueError(f"Failed to fetch video details for {link}")
 
     async def title(self, link: str, videoid: Union[bool, str]=None):
         if videoid:
@@ -195,12 +219,33 @@ class YouTubeAPI:
         elif '&si=' in link:
             link = link.split('&si=')[0]
         
+        video_id = None
+        if 'watch?v=' in link:
+            try:
+                video_id = link.split('watch?v=')[1].split('&')[0]
+            except:
+                pass
+        
+        # Try YouTube API first
+        if YT_API_KEY and video_id:
+            try:
+                details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet&key={YT_API_KEY}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if 'items' in data and len(data['items']) > 0:
+                                return data['items'][0]['snippet']['title']
+            except Exception as e:
+                logger.debug(f'YouTube API title failed: {e}')
+        
         # Try VideosSearch with retry
         for attempt in range(2):
             try:
                 results = VideosSearch(link, limit=1)
-                for result in (await results.next())['result']:
-                    title = result['title']
+                res = await results.next()
+                if res.get('result'):
+                    title = res['result'][0]['title']
                     title = convert_italic_unicode(title)
                     return title
             except Exception as e:
@@ -208,21 +253,7 @@ class YouTubeAPI:
                 if attempt == 0:
                     await asyncio.sleep(0.5)
         
-        # Fallback using YouTube API
-        try:
-            video_id = link.split('watch?v=')[-1].split('&')[0] if 'watch?v=' in link else link
-            details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet&key={YT_API_KEY}"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        if 'items' in data and len(data['items']) > 0:
-                            title = data['items'][0]['snippet']['title']
-                            return title
-        except Exception as e:
-            logger.debug(f'YouTube API title fallback failed: {e}')
-        
-        raise ValueError("Failed to fetch video title")
+        return "Unknown Title"
 
     async def duration(self, link: str, videoid: Union[bool, str]=None):
         if videoid:
@@ -234,40 +265,48 @@ class YouTubeAPI:
         elif '&si=' in link:
             link = link.split('&si=')[0]
         
+        video_id = None
+        if 'watch?v=' in link:
+            try:
+                video_id = link.split('watch?v=')[1].split('&')[0]
+            except:
+                pass
+        
+        # Try YouTube API first
+        if YT_API_KEY and video_id:
+            try:
+                details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=contentDetails&key={YT_API_KEY}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if 'items' in data and len(data['items']) > 0:
+                                duration_iso = data['items'][0]['contentDetails']['duration']
+                                import re as regex
+                                duration_regex = regex.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
+                                match = duration_regex.match(duration_iso)
+                                if match:
+                                    hours = int(match.group(1) or 0)
+                                    minutes = int(match.group(2) or 0)
+                                    seconds = int(match.group(3) or 0)
+                                    return f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
+            except Exception as e:
+                logger.debug(f'YouTube API duration failed: {e}')
+        
         # Try VideosSearch with retry
         for attempt in range(2):
             try:
                 results = VideosSearch(link, limit=1)
-                for result in (await results.next())['result']:
-                    duration = result['duration']
+                res = await results.next()
+                if res.get('result'):
+                    duration = res['result'][0].get('duration', '0:00')
                     return duration
             except Exception as e:
                 logger.debug(f'VideosSearch duration attempt {attempt + 1}/2 failed: {e}')
                 if attempt == 0:
                     await asyncio.sleep(0.5)
         
-        # Fallback using YouTube API
-        try:
-            video_id = link.split('watch?v=')[-1].split('&')[0] if 'watch?v=' in link else link
-            details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=contentDetails&key={YT_API_KEY}"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        if 'items' in data and len(data['items']) > 0:
-                            duration_iso = data['items'][0]['contentDetails']['duration']
-                            import re as regex
-                            duration_regex = regex.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
-                            match = duration_regex.match(duration_iso)
-                            if match:
-                                hours = int(match.group(1) or 0)
-                                minutes = int(match.group(2) or 0)
-                                seconds = int(match.group(3) or 0)
-                                return f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
-        except Exception as e:
-            logger.debug(f'YouTube API duration fallback failed: {e}')
-        
-        raise ValueError("Failed to fetch video duration")
+        return "0:00"
 
     async def thumbnail(self, link: str, videoid: Union[bool, str]=None):
         if videoid:
@@ -279,33 +318,46 @@ class YouTubeAPI:
         elif '&si=' in link:
             link = link.split('&si=')[0]
         
+        video_id = None
+        if 'watch?v=' in link:
+            try:
+                video_id = link.split('watch?v=')[1].split('&')[0]
+            except:
+                pass
+        
+        # Try YouTube API first
+        if YT_API_KEY and video_id:
+            try:
+                details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet&key={YT_API_KEY}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if 'items' in data and len(data['items']) > 0:
+                                thumbnail = data['items'][0]['snippet']['thumbnails'].get('high', {}).get('url', '')
+                                if thumbnail:
+                                    return thumbnail
+            except Exception as e:
+                logger.debug(f'YouTube API thumbnail failed: {e}')
+        
         # Try VideosSearch with retry
         for attempt in range(2):
             try:
                 results = VideosSearch(link, limit=1)
-                for result in (await results.next())['result']:
-                    thumbnail = result['thumbnails'][0]['url'].split('?')[0]
+                res = await results.next()
+                if res.get('result') and res['result'][0].get('thumbnails'):
+                    thumbnail = res['result'][0]['thumbnails'][0]['url'].split('?')[0]
                     return thumbnail
             except Exception as e:
                 logger.debug(f'VideosSearch thumbnail attempt {attempt + 1}/2 failed: {e}')
                 if attempt == 0:
                     await asyncio.sleep(0.5)
         
-        # Fallback using YouTube API
-        try:
-            video_id = link.split('watch?v=')[-1].split('&')[0] if 'watch?v=' in link else link
-            details_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet&key={YT_API_KEY}"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(details_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        if 'items' in data and len(data['items']) > 0:
-                            thumbnail = data['items'][0]['snippet']['thumbnails'].get('high', {}).get('url', '')
-                            return thumbnail
-        except Exception as e:
-            logger.debug(f'YouTube API thumbnail fallback failed: {e}')
+        # Return default YouTube thumbnail if video_id is available
+        if video_id:
+            return f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg"
         
-        raise ValueError("Failed to fetch video thumbnail")
+        return ""
 
     async def video(self, link: str, videoid: Union[bool, str]=None):
         if videoid:

@@ -4,6 +4,8 @@ import asyncio
 import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 import yt_dlp
+import subprocess
+import json
 from pyrogram import filters
 from pyrogram.types import Message
 from ytSearch import VideosSearch
@@ -53,175 +55,262 @@ async def song_download(client, message: Message):
             return await message.reply_text('Failed to search for the song.')
     processing_msg = await message.reply_text('🔄 Downloading song... Please wait.')
     try:
-        # Get song title and metadata
+        safe_title = re.sub('[<>:"/\\\\|?*]', '', 'Unknown - Unknown')
+        filepath = f'downloads/{safe_title}.mp3'
+        
+        # ===== STEP 1: Get metadata and search for YouTube URL =====
+        logger.info(f'Song request for: {query}')
+        
+        if not is_youtube_url(query):
+            try:
+                await processing_msg.edit_text('🔄 Searching for song...')
+                search = VideosSearch(query, limit=1)
+                results = await search.next()
+                if not results['result']:
+                    return await processing_msg.edit_text('❌ No results found for this song.')
+                video = results['result'][0]
+                video_url = video['link']
+                title = video.get('title', 'Unknown')
+                uploader = 'YouTube'
+                duration = 0
+                thumbnail_url = video.get('thumbnails', [{}])[0].get('url', '')
+                logger.info(f'Found video: {title}')
+            except Exception as e:
+                logger.error(f'Search failed: {e}')
+                return await processing_msg.edit_text('❌ Failed to search for the song.')
+        else:
+            video_url = query
+            title = 'Unknown'
+            uploader = 'YouTube'
+            duration = 0
+            thumbnail_url = ''
+        
+        # ===== STEP 2: Get metadata with yt-dlp (quiet mode) =====
         try:
-            ydl_opts_meta = {
+            await processing_msg.edit_text('🔄 Getting video info...')
+            check_opts = {
                 'quiet': True,
                 'no_warnings': True,
-                'extract_flat': True,
-                'socket_timeout': 30,
+                'extract_flat': False,
+                'socket_timeout': 15,
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
             }
             if YOUTUBE_PROXY:
-                ydl_opts_meta['proxy'] = YOUTUBE_PROXY
+                check_opts['proxy'] = YOUTUBE_PROXY
+            
             loop = asyncio.get_running_loop()
             with ThreadPoolExecutor(max_workers=1) as executor:
-                info_meta = await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts_meta).extract_info(video_url, download=False))
-            title = info_meta.get('title', 'Unknown')
-            uploader = info_meta.get('uploader', 'Unknown Artist')
-            duration = info_meta.get('duration', 0)
-            thumbnail_url = info_meta.get('thumbnail', '')
-        except Exception as meta_e:
-            logger.warning(f'Could not extract metadata: {meta_e}')
+                info = await loop.run_in_executor(
+                    executor, 
+                    lambda: yt_dlp.YoutubeDL(check_opts).extract_info(video_url, download=False)
+                )
+            
+            title = info.get('title', 'Unknown')
+            uploader = info.get('uploader', 'Unknown')
+            duration = info.get('duration', 0)
+            thumbnail_url = info.get('thumbnail', '')
+            logger.info(f'Got metadata: {title} by {uploader}')
+        except Exception as e:
+            logger.warning(f'Could not get full metadata: {e}')
             title = 'Unknown'
             uploader = 'Unknown'
-            duration = 0
-            thumbnail_url = ''
         
         safe_title = re.sub('[<>:"/\\\\|?*]', '', f'{title} - {uploader}')
         filepath = f'downloads/{safe_title}.mp3'
         
         download_success = False
         
-        # ===== ATTEMPT 1: Try yt-dlp with audio-only format =====
-        logger.info(f'[Attempt 1] yt-dlp audio format for: {video_url}')
-        await processing_msg.edit_text('🔄 Downloading song (Method 1)...')
-        try:
-            ydl_opts_audio = {
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'outtmpl': os.path.splitext(filepath)[0],
-                'quiet': False,
-                'no_warnings': False,
-                'socket_timeout': 30,
-                'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-us,en;q=0.5'
-                },
-                'extractor_args': {'youtube': {'player_client': ['web', 'android', 'ios']}}
-            }
-            if YOUTUBE_PROXY:
-                ydl_opts_audio['proxy'] = YOUTUBE_PROXY
-            
-            loop = asyncio.get_running_loop()
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts_audio).download([video_url]))
-            
-            # Check if converted to mp3
-            if os.path.exists(filepath):
+        # ===== ATTEMPT 1: Try external MP3 services (faster, no yt-dlp) =====
+        logger.info(f'[Attempt 1] Trying external MP3 services for: {video_url}')
+        await processing_msg.edit_text('🔄 Fetching from external sources...')
+        result = await try_external_mp3_extraction(video_url, filepath)
+        if result and os.path.exists(filepath):
+            file_size = os.path.getsize(filepath)
+            if file_size > 10000:  # At least 10KB
                 download_success = True
-                logger.info(f'✓ yt-dlp audio succeeded for {safe_title}')
-        except Exception as e:
-            logger.debug(f'yt-dlp audio format failed: {e}')
+                logger.info(f'✓ External service succeeded ({file_size} bytes)')
         
-        # ===== ATTEMPT 2: Try yt-dlp with best format =====
+        # ===== ATTEMPT 2: Try yt-dlp with audio format =====
         if not download_success:
-            logger.info(f'[Attempt 2] yt-dlp best format for: {video_url}')
-            await processing_msg.edit_text('🔄 Downloading song (Method 2)...')
+            logger.info(f'[Attempt 2] Trying yt-dlp bestaudio for: {video_url}')
+            await processing_msg.edit_text('🔄 Converting audio (Method 1)...')
             try:
-                ydl_opts_best = {
-                    'format': 'best',
+                ydl_opts = {
+                    'format': 'bestaudio[ext=m4a]/bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
                     'outtmpl': os.path.splitext(filepath)[0],
                     'quiet': True,
                     'no_warnings': True,
-                    'socket_timeout': 30,
+                    'socket_timeout': 20,
                     'http_headers': {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                     }
                 }
                 if YOUTUBE_PROXY:
-                    ydl_opts_best['proxy'] = YOUTUBE_PROXY
+                    ydl_opts['proxy'] = YOUTUBE_PROXY
                 
                 loop = asyncio.get_running_loop()
                 with ThreadPoolExecutor(max_workers=1) as executor:
-                    await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts_best).download([video_url]))
+                    await loop.run_in_executor(
+                        executor,
+                        lambda: yt_dlp.YoutubeDL(ydl_opts).download([video_url])
+                    )
                 
                 if os.path.exists(filepath):
-                    download_success = True
-                    logger.info(f'✓ yt-dlp best format succeeded for {safe_title}')
+                    file_size = os.path.getsize(filepath)
+                    if file_size > 10000:
+                        download_success = True
+                        logger.info(f'✓ yt-dlp bestaudio succeeded ({file_size} bytes)')
             except Exception as e:
-                logger.debug(f'yt-dlp best format failed: {e}')
+                logger.debug(f'yt-dlp bestaudio failed: {str(e)[:100]}')
         
-        # ===== ATTEMPT 3: Try external MP3 extraction services =====
+        # ===== ATTEMPT 3: Simple direct download with yt-dlp =====
         if not download_success:
-            logger.info(f'[Attempt 3] External MP3 services for: {video_url}')
-            await processing_msg.edit_text('🔄 Fetching song from external sources...')
-            result = await try_external_mp3_extraction(video_url, filepath)
-            if result and os.path.exists(filepath):
-                download_success = True
-                logger.info(f'✓ External extraction succeeded for {safe_title}')
-        
-        # ===== ATTEMPT 4: Try YouTube API with yt-dlp format fallback =====
-        if not download_success:
-            logger.info(f'[Attempt 4] YouTube format 18 fallback for: {video_url}')
-            await processing_msg.edit_text('🔄 Downloading song (Format 18)...')
+            logger.info(f'[Attempt 3] Trying yt-dlp direct best for: {video_url}')
+            await processing_msg.edit_text('🔄 Converting audio (Method 2)...')
             try:
-                ydl_opts_fallback = {
-                    'format': '18',
-                    'outtmpl': os.path.splitext(filepath)[0],
+                ydl_opts = {
+                    'format': 'best',
                     'quiet': True,
                     'no_warnings': True,
-                    'socket_timeout': 30
+                    'socket_timeout': 20,
+                    'http_headers': {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
                 }
                 if YOUTUBE_PROXY:
-                    ydl_opts_fallback['proxy'] = YOUTUBE_PROXY
+                    ydl_opts['proxy'] = YOUTUBE_PROXY
                 
                 loop = asyncio.get_running_loop()
                 with ThreadPoolExecutor(max_workers=1) as executor:
-                    await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(ydl_opts_fallback).download([video_url]))
+                    await loop.run_in_executor(
+                        executor,
+                        lambda: yt_dlp.YoutubeDL(ydl_opts).download([video_url])
+                    )
+                
+                # Look for any downloaded file and rename to mp3
+                download_dir = 'downloads'
+                if os.path.exists(download_dir):
+                    for fname in os.listdir(download_dir):
+                        if fname != f'{safe_title}.mp3':
+                            potential_file = os.path.join(download_dir, fname)
+                            try:
+                                os.rename(potential_file, filepath)
+                                logger.info(f'Renamed {fname} to {safe_title}.mp3')
+                                break
+                            except:
+                                pass
                 
                 if os.path.exists(filepath):
-                    download_success = True
-                    logger.info(f'✓ Format 18 fallback succeeded for {safe_title}')
+                    file_size = os.path.getsize(filepath)
+                    if file_size > 10000:
+                        download_success = True
+                        logger.info(f'✓ yt-dlp best succeeded ({file_size} bytes)')
             except Exception as e:
-                logger.debug(f'Format 18 fallback failed: {e}')
+                logger.debug(f'yt-dlp best failed: {str(e)[:100]}')
+        
+        # ===== ATTEMPT 4: Format 18 YouTube fallback =====
+        if not download_success:
+            logger.info(f'[Attempt 4] Trying format 18 for: {video_url}')
+            await processing_msg.edit_text('🔄 Trying format 18...')
+            try:
+                ydl_opts = {
+                    'format': '18',
+                    'quiet': True,
+                    'no_warnings': True,
+                    'socket_timeout': 20
+                }
+                if YOUTUBE_PROXY:
+                    ydl_opts['proxy'] = YOUTUBE_PROXY
+                
+                loop = asyncio.get_running_loop()
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    await loop.run_in_executor(
+                        executor,
+                        lambda: yt_dlp.YoutubeDL(ydl_opts).download([video_url])
+                    )
+                
+                # Look for downloaded file
+                for fname in os.listdir('downloads'):
+                    potential_file = os.path.join('downloads', fname)
+                    if os.path.getsize(potential_file) > 10000:
+                        try:
+                            os.rename(potential_file, filepath)
+                            download_success = True
+                            logger.info(f'✓ Format 18 succeeded')
+                            break
+                        except:
+                            pass
+            except Exception as e:
+                logger.debug(f'Format 18 failed: {str(e)[:100]}')
         
         if not download_success:
-            await processing_msg.edit_text('❌ Failed to download the song. All methods exhausted. YouTube may require authentication.')
-            logger.error(f'All download methods failed for {safe_title}')
+            await processing_msg.edit_text('❌ Download failed. Song may require authentication or not available.')
+            logger.error(f'All download attempts failed for: {title}')
             return
         
+        # ===== Send the audio file =====
         thumb_path = None
-        if thumbnail_url:
-            thumb_filename = f'{safe_title}_thumb.jpg'
-            thumb_path = await download_thumbnail(thumbnail_url, thumb_filename)
-        
-        # The file might be saved with an extension (.mp4, .m4a etc), normalize to .mp3
-        os.makedirs('downloads', exist_ok=True)
-        if not os.path.exists(filepath):
-            # Try to find the file with different extensions
-            for ext in ['.mp3', '.m4a', '.wav', '.webm', '.mp4']:
-                alt_path = os.path.splitext(filepath)[0] + ext
-                if os.path.exists(alt_path):
-                    if ext != '.mp3':
-                        try:
-                            os.rename(alt_path, filepath)
-                            logger.info(f'Renamed {alt_path} to {filepath}')
-                        except Exception as e:
-                            logger.warning(f'Could not rename {alt_path}: {e}')
-                            filepath = alt_path
-                    break
-        
-        if not os.path.exists(filepath):
-            await processing_msg.edit_text('❌ Downloaded file not found. Try using /play instead.')
-            logger.error(f'File not found after download: {filepath}')
-            return
-        
-        await message.reply_audio(audio=filepath, caption='@ArmedMusicBot', title=title, performer=uploader, duration=duration, thumb=thumb_path)
         try:
-            os.remove(filepath)
-            if thumb_path and os.path.exists(thumb_path):
-                os.remove(thumb_path)
+            if thumbnail_url:
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(thumbnail_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                            if resp.status == 200:
+                                thumb_dir = 'downloads'
+                                os.makedirs(thumb_dir, exist_ok=True)
+                                thumb_filename = f'{re.sub("[^a-zA-Z0-9]", "", safe_title)}_thumb.jpg'
+                                thumb_path = os.path.join(thumb_dir, thumb_filename)
+                                with open(thumb_path, 'wb') as f:
+                                    f.write(await resp.read())
+                except Exception as e:
+                    logger.debug(f'Thumbnail download failed: {e}')
+            
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath)
+                logger.info(f'Sending audio file: {filepath} ({file_size} bytes)')
+                
+                await message.reply_audio(
+                    audio=filepath,
+                    title=title,
+                    performer=uploader,
+                    duration=int(duration) if duration else 0,
+                    thumb=thumb_path,
+                    caption='@ArmedMusicBot'
+                )
+                
+                await processing_msg.delete()
+            else:
+                await processing_msg.edit_text('❌ File not found after download.')
+        
+        except Exception as e:
+            logger.error(f'Failed to send audio: {e}')
+            await processing_msg.edit_text(f'❌ Failed to send audio file.')
+        
+        finally:
+            # Cleanup
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    logger.debug(f'Cleaned up: {filepath}')
+            except:
+                pass
+            try:
+                if thumb_path and os.path.exists(thumb_path):
+                    os.remove(thumb_path)
+                    logger.debug(f'Cleaned up: {thumb_path}')
+            except:
+                pass
+    
+    except Exception as e:
+        logger.error(f'Song download error: {e}')
+        try:
+            await processing_msg.edit_text(f'❌ Error: {str(e)[:50]}')
         except:
             pass
-        await processing_msg.delete()
-    except Exception as e:
-        logger.error(f'Song download failed: {e}')
-        await processing_msg.edit_text('❌ Failed to download the song.')

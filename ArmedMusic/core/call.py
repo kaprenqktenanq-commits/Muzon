@@ -298,6 +298,11 @@ class Call(PyTgCalls):
         except TelegramServerError as e:
             LOGGER(__name__).warning(f"Server error during stream test (will retry): {e}")
             await asyncio.sleep(3)
+        except ValueError as ve:
+            if 'Peer id invalid' in str(ve):
+                LOGGER(__name__).warning(f"Cannot access log group for stream test - group may not be accessible. This is non-critical.")
+            else:
+                LOGGER(__name__).error(f"Stream test error: ValueError: {ve}")
         except Exception as e:
             LOGGER(__name__).error(f"Stream test error: {type(e).__name__}: {e}")
 

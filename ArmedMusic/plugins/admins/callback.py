@@ -196,6 +196,13 @@ async def del_back_playlist (client ,CallbackQuery :CallbackQuery ,_ ):
         else :
             txt =f"➻ sᴛʀᴇᴀᴍ ʀᴇ-ᴘʟᴀʏᴇᴅ 🎄\n│ \n└ʙʏ : {mention } 🥀"
         await CallbackQuery .answer ()
+        if not check :
+            return await CallbackQuery .message .reply_text (
+                text =_ ["admin_6"].format (
+                    mention ,CallbackQuery .message .chat .title
+                ),
+                reply_markup =close_markup (_ ),
+            )
         queued =check [0 ]["file"]
         title =(check [0 ]["title"]).title ()
         user =check [0 ]["by"]

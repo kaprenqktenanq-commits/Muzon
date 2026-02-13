@@ -21,12 +21,11 @@ async def _add_requester_message_link (run ,chat_id ,caption_template ,info_link
         if not run :
             return
 
-        chat_username =getattr (getattr (run ,'chat',None ),'username',None )
-        try :
-            message_id =run .message_id
-        except AttributeError :
-            logger .warning ("run object does not have message_id attribute")
+        message_id =getattr (run ,'message_id',None )
+        if not message_id :
             return
+        
+        chat_username =getattr (getattr (run ,'chat',None ),'username',None )
         if chat_username :
             message_link =f"https://t.me/{chat_username }/{message_id }"
         else :

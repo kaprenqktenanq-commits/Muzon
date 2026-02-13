@@ -308,8 +308,12 @@ async def del_back_playlist (client ,CallbackQuery :CallbackQuery ,_ ):
 
             try :
                 chat_username =getattr (getattr (run ,'chat',None ),'username',None )
+                message_id =getattr (run ,'message_id',None )
+                if not message_id :
+                    await CallbackQuery .edit_message_text (txt ,reply_markup =close_markup (_ ))
+                    return
                 if chat_username :
-                    message_link =f"https://t.me/{chat_username }/{run .message_id }"
+                    message_link =f"https://t.me/{chat_username }/{message_id }"
                 else :
                     cid =str (chat_id )
                     if cid .startswith ('-100'):
@@ -318,7 +322,7 @@ async def del_back_playlist (client ,CallbackQuery :CallbackQuery ,_ ):
                         short =cid [1 :]
                     else :
                         short =cid
-                    message_link =f"https://t.me/c/{short }/{run .message_id }"
+                    message_link =f"https://t.me/c/{short }/{message_id }"
                 new_caption =_ ['stream_2'].format (f"<a href='{message_link }'>{user }</a>")
                 try :
                     await run .edit_caption (new_caption )

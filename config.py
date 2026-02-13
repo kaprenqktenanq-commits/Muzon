@@ -9,7 +9,7 @@ load_dotenv()
 API_ID = int(getenv("API_ID", "21457002"))
 API_HASH = getenv("API_HASH", "6f9f6b8fb05ef1f4d9916e901f27bf52")
 
-BOT_TOKEN = getenv("BOT_TOKEN", "8568049660:AAHZl3Wg5b-MTXBjhQbsn9MrP9cCKbWjgDs")
+BOT_TOKEN = getenv("BOT_TOKEN", "8275714086:AAHlK27XjlAg5r8YzD-L_XPRw1Vnyf1Ff_c")
 
 # MongoDB configuration - supports Railway environment variables
 # For Railway: Use MONGO_URL or construct from individual variables

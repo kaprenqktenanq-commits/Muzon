@@ -114,20 +114,10 @@ async def song_download(client, message: Message):
         
         download_success = False
         
-        # ===== ATTEMPT 1: Try external MP3 services (faster, no yt-dlp) =====
-        logger.info(f'[Attempt 1] Trying external MP3 services for: {video_url}')
-        await processing_msg.edit_text('🔄 Fetching from external sources...')
-        result = await try_external_mp3_extraction(video_url, filepath)
-        if result and os.path.exists(filepath):
-            file_size = os.path.getsize(filepath)
-            if file_size > 10000:  # At least 10KB
-                download_success = True
-                logger.info(f'✓ External service succeeded ({file_size} bytes)')
-        
-        # ===== ATTEMPT 2: Try yt-dlp with audio format =====
+        # ===== ATTEMPT 1: Try yt-dlp with audio format (primary) =====
+        logger.info(f'[Attempt 1] Trying yt-dlp bestaudio for: {video_url}')
+        await processing_msg.edit_text('🔄 Converting audio with yt-dlp (Method 1)...')
         if not download_success:
-            logger.info(f'[Attempt 2] Trying yt-dlp bestaudio for: {video_url}')
-            await processing_msg.edit_text('🔄 Converting audio (Method 1)...')
             try:
                 ydl_opts = {
                     'format': 'bestaudio[ext=m4a]/bestaudio/best',
@@ -162,10 +152,10 @@ async def song_download(client, message: Message):
             except Exception as e:
                 logger.debug(f'yt-dlp bestaudio failed: {str(e)[:100]}')
         
-        # ===== ATTEMPT 3: Simple direct download with yt-dlp =====
+        # ===== ATTEMPT 2: Simple direct download with yt-dlp =====
         if not download_success:
-            logger.info(f'[Attempt 3] Trying yt-dlp direct best for: {video_url}')
-            await processing_msg.edit_text('🔄 Converting audio (Method 2)...')
+            logger.info(f'[Attempt 2] Trying yt-dlp direct best for: {video_url}')
+            await processing_msg.edit_text('🔄 Converting audio with yt-dlp (Method 2)...')
             try:
                 ydl_opts = {
                     'format': 'best',
@@ -207,9 +197,9 @@ async def song_download(client, message: Message):
             except Exception as e:
                 logger.debug(f'yt-dlp best failed: {str(e)[:100]}')
         
-        # ===== ATTEMPT 4: Format 18 YouTube fallback =====
+        # ===== ATTEMPT 3: Format 18 YouTube fallback =====
         if not download_success:
-            logger.info(f'[Attempt 4] Trying format 18 for: {video_url}')
+            logger.info(f'[Attempt 3] Trying format 18 for: {video_url}')
             await processing_msg.edit_text('🔄 Trying format 18...')
             try:
                 ydl_opts = {
@@ -242,6 +232,20 @@ async def song_download(client, message: Message):
             except Exception as e:
                 logger.debug(f'Format 18 failed: {str(e)[:100]}')
         
+        # ===== ATTEMPT 4: External MP3 services (fallback) =====
+        if not download_success:
+            logger.info(f'[Attempt 4] Trying external MP3 services for: {video_url}')
+            await processing_msg.edit_text('🔄 Fetching from external sources...')
+            try:
+                result = await try_external_mp3_extraction(video_url, filepath)
+                if result and os.path.exists(filepath):
+                    file_size = os.path.getsize(filepath)
+                    if file_size > 10000:
+                        download_success = True
+                        logger.info(f'✓ External service succeeded ({file_size} bytes)')
+            except Exception as e:
+                logger.debug(f'External extraction fallback failed: {type(e).__name__}: {e}')
+
         if not download_success:
             await processing_msg.edit_text('❌ Download failed. Song may require authentication or not available.')
             logger.error(f'All download attempts failed for: {title}')

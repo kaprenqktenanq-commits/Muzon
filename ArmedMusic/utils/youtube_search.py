@@ -66,6 +66,7 @@ class VideosSearch:
         """Convert seconds to MM:SS format"""
         if not seconds:
             return '0:00'
+        seconds = int(seconds)
         mins = seconds // 60
         secs = seconds % 60
         return f'{mins}:{secs:02d}'

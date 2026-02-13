@@ -7,7 +7,7 @@ from pyrogram.enums import ChatType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from pyrogram.errors.exceptions.not_acceptable_406 import ChannelPrivate
 from pyrogram.errors.exceptions.flood_420 import SlowmodeWait
-from youtubesearchpython import VideosSearch
+from ArmedMusic.utils.youtube_search import VideosSearch
 import config
 from ArmedMusic import app
 from ArmedMusic.misc import _boot_, SUDOERS

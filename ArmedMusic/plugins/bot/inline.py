@@ -1,5 +1,5 @@
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultPhoto
-from youtubesearchpython import VideosSearch
+from ArmedMusic.utils.youtube_search import VideosSearch
 from ArmedMusic import app
 from ArmedMusic.utils.inlinequery import answer
 from config import BANNED_USERS

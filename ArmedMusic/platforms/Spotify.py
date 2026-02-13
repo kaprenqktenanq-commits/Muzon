@@ -1,7 +1,7 @@
 import re
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from youtubesearchpython import VideosSearch
+from ArmedMusic.utils.youtube_search import VideosSearch
 import config
 
 class SpotifyAPI:

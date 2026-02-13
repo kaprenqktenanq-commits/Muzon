@@ -122,12 +122,22 @@ class Call (PyTgCalls ):
         await assistant .resume (chat_id )
 
     async def stop_stream (self ,chat_id :int ):
-        assistant =await group_assistant (self ,chat_id )
         try :
-            await _clear_ (chat_id )
-            await assistant .leave_call (chat_id )
-        except :
-            pass
+            assistant =await group_assistant (self ,chat_id )
+            try :
+                await _clear_ (chat_id )
+            except Exception as e :
+                LOGGER (__name__ ).warning (f"Error clearing chat {chat_id}: {e }")
+            try :
+                await assistant .leave_call (chat_id )
+            except Exception as e :
+                LOGGER (__name__ ).warning (f"Error leaving call for {chat_id}: {e }")
+        except Exception as e :
+            LOGGER (__name__ ).error (f"Error in stop_stream for {chat_id}: {e }")
+            try :
+                await _clear_ (chat_id )
+            except :
+                pass
 
     async def stop_stream_force (self ,chat_id :int ):
         try :
@@ -352,6 +362,9 @@ class Call (PyTgCalls ):
         except AlreadyJoinedError :
             raise AssistantErr (_ ["call_9"])
         except TelegramServerError :
+            raise AssistantErr (_ ["call_10"])
+        except Exception as e :
+            LOGGER (__name__ ).error (f"Unexpected error joining call {chat_id}: {e }")
             raise AssistantErr (_ ["call_10"])
         await add_active_chat (chat_id )
         await music_on (chat_id )
@@ -691,7 +704,12 @@ class Call (PyTgCalls ):
         ChatUpdate .Status .CLOSED_VOICE_CHAT
         ))
         async def stream_services_handler (client ,update :Update ):
-            await self .stop_stream (update .chat_id )
+            try :
+                chat_id =update .chat_id
+                LOGGER (__name__ ).info (f"Assistant left/kicked from call {chat_id}")
+                await self .stop_stream (chat_id )
+            except Exception as e :
+                LOGGER (__name__ ).error (f"Error in stream_services_handler: {e }")
 
         @self .one .on_update (fl .stream_end ())
         @self .two .on_update (fl .stream_end ())

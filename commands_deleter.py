@@ -5,9 +5,6 @@ from typing import Set, Tuple
 import os
 from pathlib import Path
 
-# This script will strip comments and docstrings from all .py files
-# in the repository, excluding common virtualenv and VCS directories.
-
 EXCLUDE_DIRS = {'.git', '__pycache__', 'venv', '.venv', 'env', 'build', 'dist'}
 
 def process_file(filepath: Path) -> bool:
@@ -58,7 +55,6 @@ def process_file(filepath: Path) -> bool:
     except Exception:
         return False
 
-    # Trim trailing whitespace lines
     new_src = '\n'.join([ln.rstrip() for ln in new_src.splitlines()])
     import re
     new_src = re.sub(r"\n{3,}", "\n\n", new_src)
@@ -74,13 +70,11 @@ def main():
     repo_root = Path('.').resolve()
     processed = 0
     for root, dirs, files in os.walk(repo_root):
-        # prune excluded directories
         dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
         for fname in files:
             if not fname.endswith('.py'):
                 continue
             fpath = Path(root) / fname
-            # skip this script to avoid self-modification
             if fpath.resolve() == Path(__file__).resolve():
                 continue
             ok = process_file(fpath)

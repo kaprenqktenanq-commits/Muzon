@@ -36,8 +36,7 @@ def _bool_env (var ,default =False ):
     val =getenv (var ,str (default ))
     return str (val ).lower ()in ("1","true","yes")
 
-# Cookies support removed: bot will operate without YouTube cookies
-YOUTUBE_USE_COOKIES = False
+YOUTUBE_USE_COOKIES =False
 YOUTUBE_USE_PYTUBE =_bool_env ("YOUTUBE_USE_PYTUBE",True )
 
 YOUTUBE_INVIDIOUS_INSTANCES =[i .strip ()for i in getenv ("YOUTUBE_INVIDIOUS_INSTANCES","https://yewtu.be,https://invidious.snopyta.org,https://invidious.kavin.rocks,https://invidious.tiekoetter.com,https://invidious.flokinet.to,https://yewtu.cafe,https://nsxvn4w6i7o2rjgp.onion,https://invidio.us,https://inv.riverside.rocks,https://invidious.byt3.org,https://invidious.slipfox.xyz,https://invidious.xyz").split (",")if i .strip ()]

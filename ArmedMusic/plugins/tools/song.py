@@ -11,7 +11,7 @@ import io
 import functools
 from pyrogram import filters
 from pyrogram .types import Message
-from pyrogram.errors import MessageNotModified
+from pyrogram .errors import MessageNotModified
 import logging
 from ArmedMusic import app
 from ArmedMusic .utils .decorators .urls import no_preview_filter
@@ -20,22 +20,48 @@ from config import BANNED_USERS ,YOUTUBE_PROXY
 from ArmedMusic import LOGGER
 logger =LOGGER (__name__ )
 
+def _run_yt_dlp_suppressed (ydl_opts ,urls ):
 
-def _run_yt_dlp_suppressed(ydl_opts, urls):
-    """Run yt-dlp with stdout/stderr suppressed. Returns exception string on error or None."""
-    old_stderr = sys.stderr
-    old_stdout = sys.stdout
-    sys.stderr = io.StringIO()
-    sys.stdout = io.StringIO()
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download(urls)
+    old_stderr =sys .stderr
+    old_stdout =sys .stdout
+    sys .stderr =io .StringIO ()
+    sys .stdout =io .StringIO ()
+    try :
+        with yt_dlp .YoutubeDL (ydl_opts )as ydl :
+            ydl .download (urls )
         return None
-    except Exception as e:
-        return str(e)
-    finally:
-        sys.stderr = old_stderr
-        sys.stdout = old_stdout
+    except Exception as e :
+        return str (e )
+    finally :
+        sys .stderr =old_stderr
+        sys .stdout =old_stdout
+
+def _extract_info_suppressed (url ):
+
+    old_stdout =sys .stdout
+    old_stderr =sys .stderr
+    sys .stdout =io .StringIO ()
+    sys .stderr =io .StringIO ()
+    try :
+        ydl_opts ={
+        'quiet':True ,
+        'no_warnings':True ,
+        'skip_download':True ,
+        'socket_timeout':15 ,
+        }
+        with yt_dlp .YoutubeDL (ydl_opts )as ydl :
+            info =ydl .extract_info (url ,download =False )
+            return info
+    except Exception as e :
+        err =str (e )
+        if 'Sign in to confirm'in err or 'cookies'in err .lower ():
+            logger .debug ('Info extraction requires authentication (skipping)')
+            return None
+        logger .debug (f'Info extraction failed: {err [:200 ]}')
+        return None
+    finally :
+        sys .stdout =old_stdout
+        sys .stderr =old_stderr
 
 def is_youtube_url (url :str )->bool :
     youtube_regex ='(https?://)?(www\\.)?(youtube|youtu|youtube-nocookie)\\.(com|be)/(watch\\?v=|embed/|v/|.+\\?v=)?([^&=%\\?]{11})'
@@ -95,7 +121,7 @@ async def song_download (client ,message :Message ):
         except Exception as e :
             logger .error (f'Search failed: {e }')
             return await message .reply_text ('Failed to search for the song.')
-    processing_msg = await message.reply_text('Downloading...')
+    processing_msg =await message .reply_text ('Downloading...')
     try :
         safe_title =re .sub ('[<>:"/\\\\|?*]','','Unknown - Unknown')
         filepath =f'downloads/{safe_title }.mp3'
@@ -104,27 +130,48 @@ async def song_download (client ,message :Message ):
 
         if not is_youtube_url (query ):
             try :
-                results = await search_youtube(query, limit=1)
-                if not results:
-                    await processing_msg.delete()
-                    return await message.reply_text('❌ No results found for this song.')
+                results =await search_youtube (query ,limit =1 )
+                if not results :
+                    await processing_msg .delete ()
+                    return await message .reply_text ('❌ No results found for this song.')
                 video =results [0 ]
                 video_url =f"https://www.youtube.com/watch?v={video ['id']}"
                 title =video .get ('title','Unknown')
-                uploader ='YouTube'
-                duration =0
+
+                uploader =video .get ('uploader')or video .get ('artist')
+
+                if not uploader and isinstance (title ,str )and ' - 'in title :
+                    parts =title .split (' - ',1 )
+                    maybe_artist =parts [0 ].strip ()
+                    maybe_title =parts [1 ].strip ()if len (parts )>1 else title
+                    if maybe_artist and maybe_title :
+                        uploader =maybe_artist
+                        title =maybe_title
+                if not uploader :
+                    uploader ='YouTube'
+                duration =video .get ('duration',0 )or 0
                 thumbnail_url =video .get ('thumbnails',[{}])[0 ].get ('url','')
                 logger .info (f'Found video: {title }')
             except Exception as e :
                 logger .error (f'Search failed: {e }')
-                await processing_msg.delete()
-                return await message.reply_text('❌ Failed to search for the song.')
+                await processing_msg .delete ()
+                return await message .reply_text ('❌ Failed to search for the song.')
         else :
             video_url =query
             title ='Unknown'
             uploader ='YouTube'
             duration =0
             thumbnail_url =''
+
+            try :
+                info =_extract_info_suppressed (video_url )
+                if info :
+                    title =info .get ('title',title )
+                    uploader =info .get ('uploader')or info .get ('artist')or uploader
+                    duration =info .get ('duration',duration )or duration
+                    thumbnail_url =info .get ('thumbnails',[{}])[0 ].get ('url',thumbnail_url )
+            except Exception :
+                pass
 
         logger .debug (f'Skipping metadata extraction to avoid YouTube authentication errors')
 
@@ -134,7 +181,7 @@ async def song_download (client ,message :Message ):
         download_success =False
 
         logger .info (f'[Attempt 1] Trying yt-dlp bestaudio for: {video_url }')
-        # keep processing message unchanged during attempts
+
         if not download_success :
             try :
                 ydl_opts ={
@@ -155,14 +202,14 @@ async def song_download (client ,message :Message ):
                 if YOUTUBE_PROXY :
                     ydl_opts ['proxy']=YOUTUBE_PROXY
 
-                loop = asyncio.get_running_loop()
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    err = await loop.run_in_executor(executor, functools.partial(_run_yt_dlp_suppressed, ydl_opts, [video_url]))
-                if err:
-                    if 'Sign in to confirm' in err or 'cookies' in err.lower():
-                        logger.debug('yt-dlp bestaudio requires authentication (skipping)')
-                    else:
-                        logger.debug(f'yt-dlp bestaudio failed: {err[:200]}')
+                loop =asyncio .get_running_loop ()
+                with ThreadPoolExecutor (max_workers =1 )as executor :
+                    err =await loop .run_in_executor (executor ,functools .partial (_run_yt_dlp_suppressed ,ydl_opts ,[video_url ]))
+                if err :
+                    if 'Sign in to confirm'in err or 'cookies'in err .lower ():
+                        logger .debug ('yt-dlp bestaudio requires authentication (skipping)')
+                    else :
+                        logger .debug (f'yt-dlp bestaudio failed: {err [:200 ]}')
 
                 if os .path .exists (filepath ):
                     file_size =os .path .getsize (filepath )
@@ -174,7 +221,7 @@ async def song_download (client ,message :Message ):
 
         if not download_success :
             logger .info (f'[Attempt 2] Trying yt-dlp direct best for: {video_url }')
-            # keep processing message unchanged during attempts
+
             try :
                 ydl_opts ={
                 'format':'best',
@@ -188,14 +235,14 @@ async def song_download (client ,message :Message ):
                 if YOUTUBE_PROXY :
                     ydl_opts ['proxy']=YOUTUBE_PROXY
 
-                loop = asyncio.get_running_loop()
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    err = await loop.run_in_executor(executor, functools.partial(_run_yt_dlp_suppressed, ydl_opts, [video_url]))
-                if err:
-                    if 'Sign in to confirm' in err or 'cookies' in err.lower():
-                        logger.debug('yt-dlp best requires authentication (skipping)')
-                    else:
-                        logger.debug(f'yt-dlp best failed: {err[:200]}')
+                loop =asyncio .get_running_loop ()
+                with ThreadPoolExecutor (max_workers =1 )as executor :
+                    err =await loop .run_in_executor (executor ,functools .partial (_run_yt_dlp_suppressed ,ydl_opts ,[video_url ]))
+                if err :
+                    if 'Sign in to confirm'in err or 'cookies'in err .lower ():
+                        logger .debug ('yt-dlp best requires authentication (skipping)')
+                    else :
+                        logger .debug (f'yt-dlp best failed: {err [:200 ]}')
 
                 download_dir ='downloads'
                 if os .path .exists (download_dir ):
@@ -219,7 +266,7 @@ async def song_download (client ,message :Message ):
 
         if not download_success :
             logger .info (f'[Attempt 3] Trying format 18 for: {video_url }')
-            # keep processing message unchanged during attempts
+
             try :
                 ydl_opts ={
                 'format':'18',
@@ -230,14 +277,14 @@ async def song_download (client ,message :Message ):
                 if YOUTUBE_PROXY :
                     ydl_opts ['proxy']=YOUTUBE_PROXY
 
-                loop = asyncio.get_running_loop()
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    err = await loop.run_in_executor(executor, functools.partial(_run_yt_dlp_suppressed, ydl_opts, [video_url]))
-                if err:
-                    if 'Sign in to confirm' in err or 'cookies' in err.lower():
-                        logger.debug('yt-dlp format18 requires authentication (skipping)')
-                    else:
-                        logger.debug(f'yt-dlp format18 failed: {err[:200]}')
+                loop =asyncio .get_running_loop ()
+                with ThreadPoolExecutor (max_workers =1 )as executor :
+                    err =await loop .run_in_executor (executor ,functools .partial (_run_yt_dlp_suppressed ,ydl_opts ,[video_url ]))
+                if err :
+                    if 'Sign in to confirm'in err or 'cookies'in err .lower ():
+                        logger .debug ('yt-dlp format18 requires authentication (skipping)')
+                    else :
+                        logger .debug (f'yt-dlp format18 failed: {err [:200 ]}')
 
                 for fname in os .listdir ('downloads'):
                     potential_file =os .path .join ('downloads',fname )
@@ -254,7 +301,7 @@ async def song_download (client ,message :Message ):
 
         if not download_success :
             logger .info (f'[Attempt 4] Trying external MP3 services for: {video_url }')
-            # keep processing message unchanged during attempts
+
             try :
                 result =await try_external_mp3_extraction (video_url ,filepath )
                 if result and os .path .exists (filepath ):
@@ -266,11 +313,11 @@ async def song_download (client ,message :Message ):
                 logger .debug (f'External extraction fallback failed: {type (e ).__name__ }: {e }')
 
         if not download_success :
-            try:
+            try :
                 await processing_msg .edit_text ('❌ Download failed. Song may require authentication or not available.')
-            except MessageNotModified:
+            except MessageNotModified :
                 pass
-            except Exception as e:
+            except Exception as e :
                 logger .debug (f'Edit message failed: {e }')
             logger .error (f'All download attempts failed for: {title }')
             return
@@ -306,20 +353,20 @@ async def song_download (client ,message :Message ):
 
                 await processing_msg .delete ()
             else :
-                try:
+                try :
                     await processing_msg .edit_text ('❌ File not found after download.')
-                except MessageNotModified:
+                except MessageNotModified :
                     pass
-                except Exception as e:
+                except Exception as e :
                     logger .debug (f'Edit message failed: {e }')
 
         except Exception as e :
             logger .error (f'Failed to send audio: {e }')
-            try:
+            try :
                 await processing_msg .edit_text (f'❌ Failed to send audio file.')
-            except MessageNotModified:
+            except MessageNotModified :
                 pass
-            except Exception as e:
+            except Exception as e :
                 logger .debug (f'Edit message failed: {e }')
 
         finally :
@@ -340,11 +387,11 @@ async def song_download (client ,message :Message ):
     except Exception as e :
         logger .error (f'Song download error: {e }')
         try :
-            try:
+            try :
                 await processing_msg .edit_text (f'❌ Error: {str (e )[:50 ]}')
-            except MessageNotModified:
+            except MessageNotModified :
                 pass
-            except Exception:
+            except Exception :
                 pass
         except :
             pass

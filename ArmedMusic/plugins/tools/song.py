@@ -8,6 +8,7 @@ import subprocess
 import json
 from pyrogram import filters
 from pyrogram .types import Message
+from pyrogram.errors import MessageNotModified
 import logging
 from ArmedMusic import app
 from ArmedMusic .utils .decorators .urls import no_preview_filter
@@ -74,7 +75,7 @@ async def song_download (client ,message :Message ):
         except Exception as e :
             logger .error (f'Search failed: {e }')
             return await message .reply_text ('Failed to search for the song.')
-    processing_msg =await message .reply_text ('Երգը ներբեռնվում է...')
+    processing_msg = await message.reply_text('Downloading...')
     try :
         safe_title =re .sub ('[<>:"/\\\\|?*]','','Unknown - Unknown')
         filepath =f'downloads/{safe_title }.mp3'
@@ -83,10 +84,10 @@ async def song_download (client ,message :Message ):
 
         if not is_youtube_url (query ):
             try :
-                await processing_msg .edit_text ('Երգը ներբեռնվում է...')
-                results =await search_youtube (query ,limit =1 )
-                if not results :
-                    return await processing_msg .edit_text ('❌ No results found for this song.')
+                results = await search_youtube(query, limit=1)
+                if not results:
+                    await processing_msg.delete()
+                    return await message.reply_text('❌ No results found for this song.')
                 video =results [0 ]
                 video_url =f"https://www.youtube.com/watch?v={video ['id']}"
                 title =video .get ('title','Unknown')
@@ -96,7 +97,8 @@ async def song_download (client ,message :Message ):
                 logger .info (f'Found video: {title }')
             except Exception as e :
                 logger .error (f'Search failed: {e }')
-                return await processing_msg .edit_text ('❌ Failed to search for the song.')
+                await processing_msg.delete()
+                return await message.reply_text('❌ Failed to search for the song.')
         else :
             video_url =query
             title ='Unknown'
@@ -112,7 +114,7 @@ async def song_download (client ,message :Message ):
         download_success =False
 
         logger .info (f'[Attempt 1] Trying yt-dlp bestaudio for: {video_url }')
-        await processing_msg .edit_text ('Երգը ներբեռնվում է...')
+        # keep processing message unchanged during attempts
         if not download_success :
             try :
                 ydl_opts ={
@@ -150,7 +152,7 @@ async def song_download (client ,message :Message ):
 
         if not download_success :
             logger .info (f'[Attempt 2] Trying yt-dlp direct best for: {video_url }')
-            await processing_msg .edit_text ('Երգը ներբեռնվում է...')
+            # keep processing message unchanged during attempts
             try :
                 ydl_opts ={
                 'format':'best',
@@ -193,7 +195,7 @@ async def song_download (client ,message :Message ):
 
         if not download_success :
             logger .info (f'[Attempt 3] Trying format 18 for: {video_url }')
-            await processing_msg .edit_text ('Երգը ներբեռնվում է...')
+            # keep processing message unchanged during attempts
             try :
                 ydl_opts ={
                 'format':'18',
@@ -226,7 +228,7 @@ async def song_download (client ,message :Message ):
 
         if not download_success :
             logger .info (f'[Attempt 4] Trying external MP3 services for: {video_url }')
-            await processing_msg .edit_text ('Երգը ներբեռնվում է...')
+            # keep processing message unchanged during attempts
             try :
                 result =await try_external_mp3_extraction (video_url ,filepath )
                 if result and os .path .exists (filepath ):
@@ -238,7 +240,12 @@ async def song_download (client ,message :Message ):
                 logger .debug (f'External extraction fallback failed: {type (e ).__name__ }: {e }')
 
         if not download_success :
-            await processing_msg .edit_text ('❌ Download failed. Song may require authentication or not available.')
+            try:
+                await processing_msg .edit_text ('❌ Download failed. Song may require authentication or not available.')
+            except MessageNotModified:
+                pass
+            except Exception as e:
+                logger .debug (f'Edit message failed: {e }')
             logger .error (f'All download attempts failed for: {title }')
             return
 
@@ -273,11 +280,21 @@ async def song_download (client ,message :Message ):
 
                 await processing_msg .delete ()
             else :
-                await processing_msg .edit_text ('❌ File not found after download.')
+                try:
+                    await processing_msg .edit_text ('❌ File not found after download.')
+                except MessageNotModified:
+                    pass
+                except Exception as e:
+                    logger .debug (f'Edit message failed: {e }')
 
         except Exception as e :
             logger .error (f'Failed to send audio: {e }')
-            await processing_msg .edit_text (f'❌ Failed to send audio file.')
+            try:
+                await processing_msg .edit_text (f'❌ Failed to send audio file.')
+            except MessageNotModified:
+                pass
+            except Exception as e:
+                logger .debug (f'Edit message failed: {e }')
 
         finally :
 
@@ -297,6 +314,11 @@ async def song_download (client ,message :Message ):
     except Exception as e :
         logger .error (f'Song download error: {e }')
         try :
-            await processing_msg .edit_text (f'❌ Error: {str (e )[:50 ]}')
+            try:
+                await processing_msg .edit_text (f'❌ Error: {str (e )[:50 ]}')
+            except MessageNotModified:
+                pass
+            except Exception:
+                pass
         except :
             pass

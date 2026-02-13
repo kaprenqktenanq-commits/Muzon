@@ -15,10 +15,15 @@ if not hasattr (py_errors ,'GroupcallForbidden'):
     py_errors .GroupcallForbidden =GroupcallForbidden
 
 from pytgcalls import PyTgCalls
-from pytgcalls .exceptions import (
-NoActiveGroupCall ,
-AlreadyJoinedError ,
-)
+try:
+    from pytgcalls.exceptions import (
+        NoActiveGroupCall,
+        AlreadyJoinedError,
+    )
+except Exception:
+    from pytgcalls.exceptions import NoActiveGroupCall
+    class AlreadyJoinedError(Exception):
+        pass
 from ntgcalls import TelegramServerError
 from pytgcalls .types import Update ,StreamEnded
 from pytgcalls import filters as fl

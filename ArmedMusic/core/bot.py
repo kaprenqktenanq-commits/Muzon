@@ -53,29 +53,22 @@ class Anony(Client):
         try:
             LOGGER(__name__).info(f'Attempting to access log group/channel: {config.LOGGER_ID}')
             await self.send_message(chat_id=config.LOGGER_ID, text=f'<u><b>» {self.mention} ʙᴏᴛ sᴛᴀʀᴛᴇᴅ :</b></u>\n\nɪᴅ : <code>{self.id}</code>\nɴᴀᴍᴇ : {self.name}\nᴜsᴇʀɴᴀᴍᴇ : @{self.username}')
+            LOGGER(__name__).info('✓ Startup message sent to log group')
         except (errors.ChannelInvalid, errors.PeerIdInvalid):
-            LOGGER(__name__).error('Bot has failed to access the log group/channel. Make sure that you have added your bot to your log group/channel.')
-            exit()
+            LOGGER(__name__).warning(f'Cannot access log group/channel {config.LOGGER_ID}. Bot will continue running but startup notifications will not be sent. Make sure bot is added to the group and has admin permissions.')
         except (errors.BadRequest, errors.Forbidden):
-            LOGGER(__name__).error('Bot does not have permission to access the log group/channel. Make sure:\n  1. Bot is added to the group/channel\n  2. Bot has admin permissions\n  3. LOGGER_ID is correct')
-            exit()
+            LOGGER(__name__).warning(f'Bot does not have permission to access log group/channel {config.LOGGER_ID}. Bot will continue running.')
         except Exception as ex:
             error_str = str(ex)
-            if 'Peer id invalid' in error_str or 'peer_id_invalid' in error_str.lower():
-                LOGGER(__name__).error(f'Invalid or inaccessible LOGGER_ID: {config.LOGGER_ID}. This chat either doesn\'t exist or the bot cannot access it.\n  Make sure:\n  1. Bot is a member of this group/channel\n  2. Group ID format is correct (should start with -100 for supergroups)\n  3. Error: {error_str}')
-            elif 'LOGGER_ID' in str(config.LOGGER_ID):
-                LOGGER(__name__).error(f'Invalid LOGGER_ID value: {config.LOGGER_ID}. Expected a valid Telegram chat ID.\n  Error: {type(ex).__name__}: {error_str}')
-            else:
-                LOGGER(__name__).error(f'Bot has failed to access the log group/channel.\n  Reason: {type(ex).__name__}: {error_str}')
-            exit()
+            LOGGER(__name__).warning(f'Could not access log group/channel {config.LOGGER_ID}: {type(ex).__name__}: {error_str}')
+        
         try:
             a = await self.get_chat_member(config.LOGGER_ID, self.id)
             if a.status != ChatMemberStatus.ADMINISTRATOR:
-                LOGGER(__name__).error('Please promote your bot as an admin in your log group/channel.')
-                exit()
+                LOGGER(__name__).warning(f'Bot is not an admin in log group/channel {config.LOGGER_ID}. Some functions may be limited.')
         except Exception as ex:
-            LOGGER(__name__).error(f'Failed to verify admin status: {type(ex).__name__}: {str(ex)}')
-            exit()
+            LOGGER(__name__).warning(f'Could not verify admin status in log group: {type(ex).__name__}')
+        
         LOGGER(__name__).info(f'Music Bot Started as {self.name}')
 
     async def stop(self):

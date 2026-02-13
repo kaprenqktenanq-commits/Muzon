@@ -6,6 +6,9 @@ from concurrent .futures import ThreadPoolExecutor
 import yt_dlp
 import subprocess
 import json
+import sys
+import io
+import functools
 from pyrogram import filters
 from pyrogram .types import Message
 from pyrogram.errors import MessageNotModified
@@ -16,6 +19,23 @@ from ArmedMusic .utils .external_extractors import try_external_mp3_extraction
 from config import BANNED_USERS ,YOUTUBE_PROXY
 from ArmedMusic import LOGGER
 logger =LOGGER (__name__ )
+
+
+def _run_yt_dlp_suppressed(ydl_opts, urls):
+    """Run yt-dlp with stdout/stderr suppressed. Returns exception string on error or None."""
+    old_stderr = sys.stderr
+    old_stdout = sys.stdout
+    sys.stderr = io.StringIO()
+    sys.stdout = io.StringIO()
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download(urls)
+        return None
+    except Exception as e:
+        return str(e)
+    finally:
+        sys.stderr = old_stderr
+        sys.stdout = old_stdout
 
 def is_youtube_url (url :str )->bool :
     youtube_regex ='(https?://)?(www\\.)?(youtube|youtu|youtube-nocookie)\\.(com|be)/(watch\\?v=|embed/|v/|.+\\?v=)?([^&=%\\?]{11})'
@@ -135,12 +155,14 @@ async def song_download (client ,message :Message ):
                 if YOUTUBE_PROXY :
                     ydl_opts ['proxy']=YOUTUBE_PROXY
 
-                loop =asyncio .get_running_loop ()
-                with ThreadPoolExecutor (max_workers =1 )as executor :
-                    await loop .run_in_executor (
-                    executor ,
-                    lambda :yt_dlp .YoutubeDL (ydl_opts ).download ([video_url ])
-                    )
+                loop = asyncio.get_running_loop()
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    err = await loop.run_in_executor(executor, functools.partial(_run_yt_dlp_suppressed, ydl_opts, [video_url]))
+                if err:
+                    if 'Sign in to confirm' in err or 'cookies' in err.lower():
+                        logger.debug('yt-dlp bestaudio requires authentication (skipping)')
+                    else:
+                        logger.debug(f'yt-dlp bestaudio failed: {err[:200]}')
 
                 if os .path .exists (filepath ):
                     file_size =os .path .getsize (filepath )
@@ -166,12 +188,14 @@ async def song_download (client ,message :Message ):
                 if YOUTUBE_PROXY :
                     ydl_opts ['proxy']=YOUTUBE_PROXY
 
-                loop =asyncio .get_running_loop ()
-                with ThreadPoolExecutor (max_workers =1 )as executor :
-                    await loop .run_in_executor (
-                    executor ,
-                    lambda :yt_dlp .YoutubeDL (ydl_opts ).download ([video_url ])
-                    )
+                loop = asyncio.get_running_loop()
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    err = await loop.run_in_executor(executor, functools.partial(_run_yt_dlp_suppressed, ydl_opts, [video_url]))
+                if err:
+                    if 'Sign in to confirm' in err or 'cookies' in err.lower():
+                        logger.debug('yt-dlp best requires authentication (skipping)')
+                    else:
+                        logger.debug(f'yt-dlp best failed: {err[:200]}')
 
                 download_dir ='downloads'
                 if os .path .exists (download_dir ):
@@ -206,12 +230,14 @@ async def song_download (client ,message :Message ):
                 if YOUTUBE_PROXY :
                     ydl_opts ['proxy']=YOUTUBE_PROXY
 
-                loop =asyncio .get_running_loop ()
-                with ThreadPoolExecutor (max_workers =1 )as executor :
-                    await loop .run_in_executor (
-                    executor ,
-                    lambda :yt_dlp .YoutubeDL (ydl_opts ).download ([video_url ])
-                    )
+                loop = asyncio.get_running_loop()
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    err = await loop.run_in_executor(executor, functools.partial(_run_yt_dlp_suppressed, ydl_opts, [video_url]))
+                if err:
+                    if 'Sign in to confirm' in err or 'cookies' in err.lower():
+                        logger.debug('yt-dlp format18 requires authentication (skipping)')
+                    else:
+                        logger.debug(f'yt-dlp format18 failed: {err[:200]}')
 
                 for fname in os .listdir ('downloads'):
                     potential_file =os .path .join ('downloads',fname )

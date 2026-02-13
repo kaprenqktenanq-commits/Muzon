@@ -189,7 +189,7 @@ async def song_download (client ,message :Message ):
                 'postprocessors':[{
                 'key':'FFmpegExtractAudio',
                 'preferredcodec':'mp3',
-                'preferredquality':'192',
+                'preferredquality':'320',
                 }],
                 'outtmpl':os .path .splitext (filepath )[0 ],
                 'quiet':True ,

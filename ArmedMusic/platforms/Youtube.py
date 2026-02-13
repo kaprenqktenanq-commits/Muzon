@@ -711,7 +711,7 @@ class YouTubeAPI :
                             break
                         try :
                             invid_url =f"{inst .rstrip ('/')}/watch?v={vid_id }"
-                            ydl_fallback ={'format':'bestaudio/best','outtmpl':os .path .join ('downloads',f'{vid_id }'),'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'192'}],'quiet':True ,'no_warnings':True ,'retries':5 ,'fragment_retries':5 ,'skip_unavailable_fragments':True ,'js_runtimes':{'node':{}}}
+                            ydl_fallback ={'format':'bestaudio/best','outtmpl':os .path .join ('downloads',f'{vid_id }'),'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}],'quiet':True ,'no_warnings':True ,'retries':5 ,'fragment_retries':5 ,'skip_unavailable_fragments':True ,'js_runtimes':{'node':{}}}
                             if YOUTUBE_PROXY :
                                 ydl_fallback ['proxy']=YOUTUBE_PROXY
                             loop =asyncio .get_running_loop ()
@@ -784,7 +784,7 @@ class YouTubeAPI :
                 {
                 'format':'bestaudio/best',
                 'outtmpl':os .path .join ('downloads',f'{vid_id }'),
-                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'192'}],
+                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}],
                 'quiet':True ,
                 'no_warnings':True ,
                 'retries':5 ,
@@ -828,7 +828,7 @@ class YouTubeAPI :
                 {
                 'format':'bestaudio',
                 'outtmpl':os .path .join ('downloads',f'{vid_id }'),
-                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'128'}],
+                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}],
                 'quiet':True ,
                 'no_warnings':True ,
                 'retries':3 ,
@@ -854,7 +854,7 @@ class YouTubeAPI :
                 {
                 'format':'140/171/251/bestaudio[ext=m4a]/bestaudio',
                 'outtmpl':os .path .join ('downloads',f'{vid_id }'),
-                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'192'}],
+                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}],
                 'quiet':True ,
                 'no_warnings':True ,
                 'retries':3 ,
@@ -878,7 +878,7 @@ class YouTubeAPI :
                 {
                 'format':'bestaudio',
                 'outtmpl':os .path .join ('downloads',f'{vid_id }'),
-                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'128'}],
+                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}],
                 'quiet':True ,
                 'no_warnings':True ,
                 'retries':3 ,
@@ -889,7 +889,7 @@ class YouTubeAPI :
                 {
                 'format':'bestaudio[ext=m4a]/bestaudio[acodec=mp4a]/140/bestaudio/best[ext=mp4]/best',
                 'outtmpl':os .path .join ('downloads',f'{vid_id }'),
-                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'192'}],
+                'postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}],
                 'quiet':True ,
                 'no_warnings':True ,
                 'retries':5 ,

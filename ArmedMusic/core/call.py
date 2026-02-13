@@ -17,6 +17,7 @@ if not hasattr (py_errors ,'GroupcallForbidden'):
 from pytgcalls import PyTgCalls
 from pytgcalls .exceptions import (
 NoActiveGroupCall ,
+AlreadyJoinedError ,
 )
 from ntgcalls import TelegramServerError
 from pytgcalls .types import Update ,StreamEnded
@@ -252,9 +253,10 @@ class Call (PyTgCalls ):
             link ,
             audio_parameters =AudioQuality .HIGH ,
             video_parameters =VideoQuality .SD_480p ,
+            ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
             )
         else :
-            stream =MediaStream (link ,audio_parameters =AudioQuality .HIGH ,video_flags =MediaStream .Flags .IGNORE )
+            stream =MediaStream (link ,audio_parameters =AudioQuality .HIGH ,video_flags =MediaStream .Flags .IGNORE ,ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k")
         await assistant .play (
         chat_id ,
         stream ,
@@ -285,7 +287,7 @@ class Call (PyTgCalls ):
             assistant =await group_assistant (self ,config .LOGGER_ID )
             await assistant .play (
             config .LOGGER_ID ,
-            MediaStream (link )
+            MediaStream (link ,ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k")
             )
             await asyncio .sleep (0.2 )
             await assistant .leave_call (config .LOGGER_ID )
@@ -318,7 +320,8 @@ class Call (PyTgCalls ):
         if video :
             stream =MediaStream (
             link ,
-            audio_parameters =AudioQuality .HIGH ,video_parameters =VideoQuality .SD_480p
+            audio_parameters =AudioQuality .HIGH ,video_parameters =VideoQuality .SD_480p ,
+            ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
             )
 
         else :
@@ -327,10 +330,11 @@ class Call (PyTgCalls ):
             link ,
             audio_parameters =AudioQuality .HIGH ,
             video_parameters =VideoQuality .SD_480p ,
+            ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
 
             )
             if video
-            else MediaStream (link ,audio_parameters =AudioQuality .HIGH ,video_flags =MediaStream .Flags .IGNORE )
+            else MediaStream (link ,audio_parameters =AudioQuality .HIGH ,video_flags =MediaStream .Flags .IGNORE ,ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k")
             )
         try :
             await assistant .play (
@@ -406,12 +410,14 @@ class Call (PyTgCalls ):
                     link ,
                     audio_parameters =AudioQuality .HIGH ,
                     video_parameters =VideoQuality .SD_480p ,
+                    ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                     )
                 else :
                     stream =MediaStream (
                     link ,
                     audio_parameters =AudioQuality .HIGH ,
-                    video_flags =MediaStream .Flags .IGNORE
+                    video_flags =MediaStream .Flags .IGNORE ,
+                    ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                     )
                 try :
                     await client .play (chat_id ,stream )
@@ -462,12 +468,14 @@ class Call (PyTgCalls ):
                     file_path ,
                     audio_parameters =AudioQuality .HIGH ,
                     video_parameters =VideoQuality .SD_480p ,
+                    ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                     )
                 else :
                     stream =MediaStream (
                     file_path ,
                     audio_parameters =AudioQuality .HIGH ,
-                    video_flags =MediaStream .Flags .IGNORE
+                    video_flags =MediaStream .Flags .IGNORE ,
+                    ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                     )
                 try :
                     await client .play (chat_id ,stream )
@@ -506,9 +514,10 @@ class Call (PyTgCalls ):
                 videoid ,
                 audio_parameters =AudioQuality .HIGH ,
                 video_parameters =VideoQuality .SD_480p ,
+                ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                 )
                 if str (streamtype )=="video"
-                else MediaStream (videoid ,audio_parameters =AudioQuality .HIGH ,video_flags =MediaStream .Flags .IGNORE )
+                else MediaStream (videoid ,audio_parameters =AudioQuality .HIGH ,video_flags =MediaStream .Flags .IGNORE ,ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k")
                 )
                 try :
                     await client .play (chat_id ,stream )
@@ -532,12 +541,14 @@ class Call (PyTgCalls ):
                     queued ,
                     audio_parameters =AudioQuality .HIGH ,
                     video_parameters =VideoQuality .SD_480p ,
+                    ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                     )
                 else :
                     stream =MediaStream (
                     queued ,
                     audio_parameters =AudioQuality .HIGH ,
-                    video_flags =MediaStream .Flags .IGNORE
+                    video_flags =MediaStream .Flags .IGNORE ,
+                    ffmpeg_parameters ="-ar 48000 -ac 2 -b:a 256k",
                     )
                 try :
                     await client .play (chat_id ,stream )

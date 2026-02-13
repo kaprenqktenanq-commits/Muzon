@@ -8,7 +8,7 @@ import subprocess
 import json
 from pyrogram import filters
 from pyrogram.types import Message
-from youtubesearchpython import VideosSearch
+import logging
 from ArmedMusic import app
 from ArmedMusic.utils.decorators.urls import no_preview_filter
 from ArmedMusic.utils.external_extractors import try_external_mp3_extraction
@@ -19,6 +19,28 @@ logger = LOGGER(__name__)
 def is_youtube_url(url: str) -> bool:
     youtube_regex = '(https?://)?(www\\.)?(youtube|youtu|youtube-nocookie)\\.(com|be)/(watch\\?v=|embed/|v/|.+\\?v=)?([^&=%\\?]{11})'
     return bool(re.match(youtube_regex, url))
+
+async def search_youtube(query: str, limit: int = 1) -> list:
+    """Search YouTube using yt-dlp instead of youtubesearchpython to avoid httpx compatibility issues"""
+    try:
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor() as executor:
+            def _search():
+                ydl_opts = {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'default_search': 'ytsearch',
+                    'extract_flat': True,
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    results = ydl.extract_info(f'ytsearch{limit}:{query}', download=False)
+                    return results.get('entries', [])
+            
+            results = await loop.run_in_executor(None, _search)
+            return results
+    except Exception as e:
+        logger.error(f'YouTube search error: {type(e).__name__}: {e}')
+        return []
 
 async def download_thumbnail(url: str, filename: str) -> str:
     try:
@@ -43,13 +65,12 @@ async def song_download(client, message: Message):
     if is_youtube_url(query):
         video_url = query
     else:
-        search = VideosSearch(query, limit=1)
         try:
-            results = await search.next()
-            if not results['result']:
+            results = await search_youtube(query, limit=1)
+            if not results:
                 return await message.reply_text('No results found for this song.')
-            video = results['result'][0]
-            video_url = video['link']
+            video = results[0]
+            video_url = f"https://www.youtube.com/watch?v={video['id']}"
         except Exception as e:
             logger.error(f'Search failed: {e}')
             return await message.reply_text('Failed to search for the song.')
@@ -64,12 +85,11 @@ async def song_download(client, message: Message):
         if not is_youtube_url(query):
             try:
                 await processing_msg.edit_text('🔄 Searching for song...')
-                search = VideosSearch(query, limit=1)
-                results = await search.next()
-                if not results['result']:
+                results = await search_youtube(query, limit=1)
+                if not results:
                     return await processing_msg.edit_text('❌ No results found for this song.')
-                video = results['result'][0]
-                video_url = video['link']
+                video = results[0]
+                video_url = f"https://www.youtube.com/watch?v={video['id']}"
                 title = video.get('title', 'Unknown')
                 uploader = 'YouTube'
                 duration = 0

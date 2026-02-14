@@ -2,17 +2,17 @@ import asyncio
 import importlib
 import sys
 from pyrogram import idle
+from pyrogram import errors as pyrogram_errors
 from pyrogram .errors import FloodWait ,UnknownError
 
-# Compatibility patch for newer pyrogram versions
-try:
-    from pyrogram.errors import GroupcallForbidden
-except ImportError:
+# Compatibility patch for newer pyrogram versions - inject missing exceptions
+if not hasattr(pyrogram_errors, 'GroupcallForbidden'):
     from pyrogram.errors import RPCError
     class GroupcallForbidden(RPCError):
         """Groupcall is forbidden for this user"""
         CODE = 400
         NAME = "GROUPCALL_FORBIDDEN"
+    pyrogram_errors.GroupcallForbidden = GroupcallForbidden
 
 from pytgcalls .exceptions import NoActiveGroupCall
 from ntgcalls import TelegramServerError

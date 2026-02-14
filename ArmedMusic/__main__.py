@@ -3,6 +3,17 @@ import importlib
 import sys
 from pyrogram import idle
 from pyrogram .errors import FloodWait ,UnknownError
+
+# Compatibility patch for newer pyrogram versions
+try:
+    from pyrogram.errors import GroupcallForbidden
+except ImportError:
+    from pyrogram.errors import RPCError
+    class GroupcallForbidden(RPCError):
+        """Groupcall is forbidden for this user"""
+        CODE = 400
+        NAME = "GROUPCALL_FORBIDDEN"
+
 from pytgcalls .exceptions import NoActiveGroupCall
 from ntgcalls import TelegramServerError
 import config
